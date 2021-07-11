@@ -8,11 +8,11 @@ type TelegramResponseBody = {
   parse_mode: TelegramParseMode;
 };
 
-function response(chatId: string, response: string): TelegramResponseBody {
+function response(chatId: string, text: string): TelegramResponseBody {
   return {
     method: "sendMessage",
     chat_id: chatId,
-    text: response,
+    text: text,
     parse_mode: "markdown",
   };
 }
