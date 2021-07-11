@@ -11,34 +11,26 @@ export interface Forecast {
   dateUnixTimestamp: number;
 }
 
-export async function getForecastMessage(city: string, code: string) {
-  const forecast = await fetchTomorrowsForecast(city, code);
-  return buildForecastMessage(forecast);
+export enum Day {
+  TODAY,
+  TOMORROW,
+  IN_TWO_DAYS,
+  IN_THREE_DAYS,
+  IN_FOUR_DAYS,
+  IN_FIVE_DAYS,
 }
 
-async function fetchTomorrowsForecast(
+export async function fetchWeather(
   city: string,
-  countryCode: string
-): Promise<Forecast> {
+  countryCode: string,
+  when: Day
+) {
   const response = await api.requestDailyForecast(city, countryCode);
-  const forecast = response.list[1];
-  const condition = api.getWeatherCondition(forecast);
-
-  return {
-    isClear:
-      condition == api.WeatherCondition.Clear ||
-      condition == api.WeatherCondition.Clouds,
-    location: `${city} (${countryCode})`,
-    description: forecast.weather[0].description,
-    minimumTemperature: forecast.temp.min,
-    maxTemperature: forecast.temp.max,
-    humidity: forecast.humidity,
-    windSpeed: forecast.speed,
-    dateUnixTimestamp: forecast.dt,
-  };
+  const forecast = response.list[when];
+  return mapForecastData(forecast, city, countryCode.toUpperCase());
 }
 
-function buildForecastMessage(forecast: Forecast) {
+export function buildForecastMessage(forecast: Forecast) {
   const UNIX_DT_TRANSFORM_RATIO = 1000;
   const dateString = new Date(
     forecast.dateUnixTimestamp * UNIX_DT_TRANSFORM_RATIO
@@ -53,4 +45,24 @@ function buildForecastMessage(forecast: Forecast) {
     💨 ${forecast.windSpeed} m/s
     - - - - - - - - - - - - - - - - - - - - - -
     `;
+}
+
+function mapForecastData(
+  forecast: api.DayForecast,
+  city: string,
+  countryCode: string
+) {
+  const condition = api.getWeatherCondition(forecast);
+  return {
+    isClear:
+      condition == api.WeatherCondition.Clear ||
+      condition == api.WeatherCondition.Clouds,
+    location: `${city} (${countryCode})`,
+    description: forecast.weather[0].description,
+    minimumTemperature: forecast.temp.min,
+    maxTemperature: forecast.temp.max,
+    humidity: forecast.humidity,
+    windSpeed: forecast.speed,
+    dateUnixTimestamp: forecast.dt,
+  };
 }

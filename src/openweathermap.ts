@@ -13,7 +13,7 @@ export interface DailyForecastResponse {
   list: Array<DayForecast>;
 }
 
-interface DayForecast {
+export interface DayForecast {
   weather: Array<{
     id: number;
     main: string;

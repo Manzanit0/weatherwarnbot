@@ -1,5 +1,5 @@
 import { Application, Router } from "https://deno.land/x/oak@v7.7.0/mod.ts";
-import { getForecastMessage } from "./forecast.ts";
+import { buildForecastMessage, Day, fetchWeather } from "./forecast.ts";
 import { response, TelegramRequestBody } from "./telegram.ts";
 import * as log from "https://deno.land/std@0.100.0/log/mod.ts";
 
@@ -37,17 +37,44 @@ router.post("/api/telegram", async (context) => {
       countryCode: countryCode,
     });
 
-    if (city && countryCode) {
-      dl.info(`getting tomorrow's forecast for ${city} (${countryCode})`);
+    if (command == "/tomorrow") {
+      if (city && countryCode) {
+        dl.info(`getting tomorrow's forecast for ${city} (${countryCode})`);
+        const forecast = await fetchWeather(city, countryCode, Day.TOMORROW);
+        const message = buildForecastMessage(forecast);
+        context.response.body = response(chatId, message);
+      } else {
+        dl.warning("wrong command usage");
+        context.response.body = response(
+          chatId,
+          "Wrong command usage. Required format: '/tomorrow madrid ES'"
+        );
+      }
+    } else if (command == "/now") {
+      if (city && countryCode) {
+        dl.info(`getting todays's forecast for ${city} (${countryCode})`);
+        const forecast = await fetchWeather(city, countryCode, Day.TODAY);
+        const message = buildForecastMessage(forecast);
+        context.response.body = response(chatId, message);
+      } else {
+        dl.warning("wrong command usage");
+        context.response.body = response(
+          chatId,
+          "Wrong command usage. Required format: '/now madrid ES'"
+        );
+      }
+    } else if (command == "/help") {
       context.response.body = response(
         chatId,
-        await getForecastMessage(city, countryCode.toUpperCase())
-      );
-    } else {
-      dl.warning("wrong command usage");
-      context.response.body = response(
-        chatId,
-        "Wrong command usage. Required format: '/forecast madrid ES'"
+        `
+        Los siguientes comandos están disponibles para su uso: \n
+        ✔️ /now {CIUDAD} {CODIGO_PAIS}
+        \t Devuelve el tiempo para la ciudad en estos momentos.\n
+        ✔️ /tomorrow {CIUDAD} {CODIGO_PAIS}
+        \t Devuelve el tiempo para la ciudad mañana.\n
+        ✔️ /help
+        \t imprime esta ayuda.\n
+        `
       );
     }
   } catch (error) {
@@ -83,5 +110,5 @@ app.use(router.routes());
 app.use(router.allowedMethods());
 
 const port = Number(Deno.env.get("PORT") ?? "8000");
-dl.info("starting http server on port", port);
+dl.info(`starting http server on port ${port}`);
 app.listen({ port: port });
