@@ -1,6 +1,16 @@
 type TelegramParseMode = "markdown" | "text";
 type TelegramAPIMethod = "sendMessage";
-type TelegramRequestBody = { message: { from: { id: string }; text: string } };
+type TelegramChatType = "private" | "group";
+type TelegramRequestBody = {
+  update_id: string;
+  message: {
+    message_id: string;
+    language_code: string;
+    from: { id: string };
+    text: string;
+    chat: { id: string; title: string; type: TelegramChatType };
+  };
+};
 type TelegramResponseBody = {
   method: TelegramAPIMethod;
   chat_id: string;

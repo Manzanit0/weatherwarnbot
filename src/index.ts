@@ -24,7 +24,7 @@ router.post("/api/telegram", async (context) => {
   try {
     const json = (await context.request.body({ type: "json" })
       .value) as TelegramRequestBody;
-    const chatId = json.message.from.id;
+    const chatId = json.message.chat.id;
     if (!json) {
       context.response.body = response(chatId, "no body");
       return;
@@ -37,7 +37,8 @@ router.post("/api/telegram", async (context) => {
       countryCode: countryCode,
     });
 
-    if (command == "/tomorrow") {
+    // Must do .includes() instead of exact match due to groups.
+    if (command.includes("/tomorrow")) {
       if (city && countryCode) {
         dl.info(`getting tomorrow's forecast for ${city} (${countryCode})`);
         const forecast = await fetchWeather(city, countryCode, Day.TOMORROW);
@@ -50,7 +51,7 @@ router.post("/api/telegram", async (context) => {
           "Wrong command usage. Required format: '/tomorrow madrid ES'"
         );
       }
-    } else if (command == "/now") {
+    } else if (command.includes("/now")) {
       if (city && countryCode) {
         dl.info(`getting todays's forecast for ${city} (${countryCode})`);
         const forecast = await fetchWeather(city, countryCode, Day.TODAY);
@@ -63,7 +64,7 @@ router.post("/api/telegram", async (context) => {
           "Wrong command usage. Required format: '/now madrid ES'"
         );
       }
-    } else if (command == "/help") {
+    } else if (command.includes("/help")) {
       context.response.body = response(
         chatId,
         `
@@ -74,6 +75,16 @@ router.post("/api/telegram", async (context) => {
         \t Devuelve el tiempo para la ciudad mañana.\n
         ✔️ /help
         \t imprime esta ayuda.\n
+        \n
+        Recuerda que si me estás llamando dentro de un group, seguramente tengas
+        que usar el sufijo con mi nombre: /help@weatherwarnbot
+        `
+      );
+    } else {
+      context.response.body = response(
+        chatId,
+        `
+        Desconozco ese comando... prueba con /help para ver lo que conozco.
         `
       );
     }
