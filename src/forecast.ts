@@ -30,6 +30,15 @@ export async function fetchWeather(
   return mapForecastData(forecast, city, countryCode.toUpperCase());
 }
 
+export async function fetchWeatherByCoordinates(lat: number, lon: number) {
+  const response = await api.requestDailyForecastByCoordinate({
+    latitude: lat,
+    longitude: lon,
+  });
+  const forecast = response.list[Day.TODAY];
+  return mapForecastData(forecast, "", "N/a");
+}
+
 export function buildForecastMessage(forecast: Forecast) {
   const UNIX_DT_TRANSFORM_RATIO = 1000;
   const dateString = new Date(

@@ -1,3 +1,6 @@
+import * as log from "https://deno.land/std@0.100.0/log/mod.ts";
+
+const dl = log.getLogger();
 export interface DailyForecastResponse {
   city: {
     id: number;
@@ -56,22 +59,45 @@ export enum WeatherCondition {
   Clouds,
 }
 
-export async function requestDailyForecast(
-  city: string,
-  countryCode: string
-): Promise<DailyForecastResponse> {
-  const key = Deno.env.get("OPENWEATHERMAP_API_KEY");
-  const url = `http://api.openweathermap.org/data/2.5/forecast/daily/?q=${city},${countryCode}&APPID=${key}&units=metric&lang=es`;
+export type Coordinates = {
+  latitude: number;
+  longitude: number;
+};
 
+export async function requestDailyForecastByCoordinate(coords: Coordinates) {
+  const key = Deno.env.get("OPENWEATHERMAP_API_KEY");
+  const url = `http://api.openweathermap.org/data/2.5/forecast/daily/?lat=${coords.latitude}&lon=${coords.longitude}&APPID=${key}&units=metric&lang=es`;
+
+  dl.info(`Sending request to ${url}`);
   const res = await fetch(url);
   if (!res.ok) {
-    console.log("http status ", res.status);
+    dl.warning(`http status ${res.status}`);
     throw new Error("failed to make request to openweathermap API");
   }
 
   const blob = (await res.json()) as DailyForecastResponse;
   if (!blob) {
-    console.log("http status ", res.status);
+    dl.warning(`http status ${res.status}`);
+    throw new Error("unexpected response from openweathermap");
+  }
+
+  return blob;
+}
+
+export async function requestDailyForecast(city: string, countryCode: string) {
+  const key = Deno.env.get("OPENWEATHERMAP_API_KEY");
+  const url = `http://api.openweathermap.org/data/2.5/forecast/daily/?q=${city},${countryCode}&APPID=${key}&units=metric&lang=es`;
+
+  dl.info(`Sending request to ${url}`);
+  const res = await fetch(url);
+  if (!res.ok) {
+    dl.warning(`http status ${res.status}`);
+    throw new Error("failed to make request to openweathermap API");
+  }
+
+  const blob = (await res.json()) as DailyForecastResponse;
+  if (!blob) {
+    dl.warning(`http status ${res.status}`);
     throw new Error("unexpected response from openweathermap");
   }
 

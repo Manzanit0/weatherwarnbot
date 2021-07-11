@@ -8,7 +8,13 @@ type TelegramRequestBody = {
     language_code: string;
     from: { id: string };
     text: string;
-    chat: { id: string; title: string; type: TelegramChatType };
+    chat: {
+      id: string;
+      title: string;
+      type: TelegramChatType;
+    };
+    location?: { latitude: number; longitude: number };
+    date: number;
   };
 };
 type TelegramResponseBody = {
