@@ -5,24 +5,10 @@ import {
   fetchWeather,
   fetchWeatherByCoordinates,
 } from "./forecast.ts";
+import { getLogger } from "./logger.ts";
 import { response, TelegramRequestBody } from "./telegram.ts";
-import * as log from "https://deno.land/std@0.100.0/log/mod.ts";
 
-await log.setup({
-  handlers: {
-    console: new log.handlers.ConsoleHandler("DEBUG", {
-      formatter: "{datetime} {levelName} {msg}",
-    }),
-  },
-  loggers: {
-    default: {
-      level: "DEBUG",
-      handlers: ["console"],
-    },
-  },
-});
-
-const dl = log.getLogger();
+const dl = await getLogger();
 
 const router = new Router();
 router.post("/api/telegram", async (context) => {

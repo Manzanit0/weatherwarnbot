@@ -1,6 +1,6 @@
-import * as log from "https://deno.land/std@0.100.0/log/mod.ts";
+import { getLogger } from "./logger.ts";
 
-const dl = log.getLogger();
+const dl = await getLogger();
 export interface DailyForecastResponse {
   city: {
     id: number;
