@@ -49,3 +49,7 @@ Deno.test("unknown command throws", () => {
 Deno.test("invalid params on command throws", () => {
   a.assertThrows(() => parseCommand("/tomorrow foo bar"));
 });
+
+Deno.test("missing params on command throws", () => {
+  a.assertThrows(() => parseCommand("/tomorrow new york,    "));
+});

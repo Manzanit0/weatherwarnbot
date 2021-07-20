@@ -54,31 +54,15 @@ router.post("/api/telegram", async (context) => {
         `
         );
       } else if (c.command == "now") {
-        if (c.city && c.country) {
-          dl.info(`getting todays's forecast for ${c.city} (${c.country})`);
-          const forecast = await fetchWeather(c.city, c.country, Day.TODAY);
-          const message = buildForecastMessage(forecast);
-          context.response.body = response(chatId, message);
-        } else {
-          dl.warning("wrong command usage");
-          context.response.body = response(
-            chatId,
-            "Wrong command usage. Required format: '/now madrid ES'"
-          );
-        }
+        dl.info(`getting todays's forecast for ${c.city} (${c.country})`);
+        const forecast = await fetchWeather(c.city!, c.country!, Day.TODAY);
+        const message = buildForecastMessage(forecast);
+        context.response.body = response(chatId, message);
       } else if (c.command == "tomorrow") {
-        if (c.city && c.country) {
-          dl.info(`getting todays's forecast for ${c.city} (${c.country})`);
-          const forecast = await fetchWeather(c.city, c.country, Day.TODAY);
-          const message = buildForecastMessage(forecast);
-          context.response.body = response(chatId, message);
-        } else {
-          dl.warning("wrong command usage");
-          context.response.body = response(
-            chatId,
-            "Wrong command usage. Required format: '/now madrid ES'"
-          );
-        }
+        dl.info(`getting todays's forecast for ${c.city} (${c.country})`);
+        const forecast = await fetchWeather(c.city!, c.country!, Day.TODAY);
+        const message = buildForecastMessage(forecast);
+        context.response.body = response(chatId, message);
       } else {
         context.response.body = response(
           chatId,
