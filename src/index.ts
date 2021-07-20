@@ -60,7 +60,7 @@ router.post("/api/telegram", async (context) => {
         context.response.body = response(chatId, message);
       } else if (c.command == "tomorrow") {
         dl.info(`getting todays's forecast for ${c.city} (${c.country})`);
-        const forecast = await fetchWeather(c.city!, c.country!, Day.TODAY);
+        const forecast = await fetchWeather(c.city!, c.country!, Day.TOMORROW);
         const message = buildForecastMessage(forecast);
         context.response.body = response(chatId, message);
       } else {
