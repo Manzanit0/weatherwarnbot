@@ -12,15 +12,15 @@ const dl = await getLogger();
 
 const router = new Router();
 router.post("/api/telegram", async (context) => {
-  try {
-    const json = (await context.request.body({ type: "json" })
-      .value) as TelegramRequestBody;
-    const chatId = json.message.chat.id;
-    if (!json) {
-      context.response.body = response(chatId, "no body");
-      return;
-    }
+  const json = (await context.request.body({ type: "json" })
+    .value) as TelegramRequestBody;
+  if (!json) {
+    throw new Error("no body in payload");
+  }
 
+  const chatId = json.message.chat.id;
+
+  try {
     if (json.message.location) {
       dl.info(`getting todays's forecast for location`);
       const forecast = await fetchWeatherByCoordinates(
@@ -95,10 +95,7 @@ router.post("/api/telegram", async (context) => {
     }
   } catch (error) {
     dl.error(`error when processing request: ${error}`);
-
-    context.response.body = {
-      message: error,
-    };
+    context.response.body = response(chatId, error.message);
   }
 });
 
