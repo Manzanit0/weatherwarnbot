@@ -6,7 +6,7 @@ import {
   fetchWeatherByCoordinates,
 } from "./forecast.ts";
 import { getLogger } from "./logger.ts";
-import { response, TelegramRequestBody } from "./telegram.ts";
+import { parseCommand, response, TelegramRequestBody } from "./telegram.ts";
 
 const dl = await getLogger();
 
@@ -30,31 +30,33 @@ router.post("/api/telegram", async (context) => {
       const message = buildForecastMessage(forecast);
       context.response.body = response(chatId, message);
     } else if (json.message.text) {
-      const [command, city, countryCode] = json.message.text.split(" ");
-      dl.info("received telegram request", {
-        command: command,
-        city: city,
-        countryCode: countryCode,
-      });
+      const c = parseCommand(json.message.text);
 
-      // Must do .includes() instead of exact match due to groups.
-      if (command.includes("/tomorrow")) {
-        if (city && countryCode) {
-          dl.info(`getting tomorrow's forecast for ${city} (${countryCode})`);
-          const forecast = await fetchWeather(city, countryCode, Day.TOMORROW);
-          const message = buildForecastMessage(forecast);
-          context.response.body = response(chatId, message);
-        } else {
-          dl.warning("wrong command usage");
-          context.response.body = response(
-            chatId,
-            "Wrong command usage. Required format: '/tomorrow madrid ES'"
-          );
-        }
-      } else if (command.includes("/now")) {
-        if (city && countryCode) {
-          dl.info(`getting todays's forecast for ${city} (${countryCode})`);
-          const forecast = await fetchWeather(city, countryCode, Day.TODAY);
+      if (c.command == "help") {
+        context.response.body = response(
+          chatId,
+          `
+        Los siguientes comandos están disponibles para su uso:
+
+        ✔️ /now London, GB
+        Devuelve el tiempo para la ciudad en estos momentos.
+
+        ✔️ /tomorrow Madrid, ES
+        Devuelve el tiempo para la ciudad mañana.
+
+        ✔️ /help
+        imprime esta ayuda.
+
+        Recuerda que si me estás llamando dentro de un group, seguramente tengas
+        que usar el sufijo con mi nombre: /help@weatherwarnbot.
+
+        Tambien puedes probar a enviarme una localización.
+        `
+        );
+      } else if (c.command == "now") {
+        if (c.city && c.country) {
+          dl.info(`getting todays's forecast for ${c.city} (${c.country})`);
+          const forecast = await fetchWeather(c.city, c.country, Day.TODAY);
           const message = buildForecastMessage(forecast);
           context.response.body = response(chatId, message);
         } else {
@@ -64,22 +66,19 @@ router.post("/api/telegram", async (context) => {
             "Wrong command usage. Required format: '/now madrid ES'"
           );
         }
-      } else if (command.includes("/help")) {
-        context.response.body = response(
-          chatId,
-          `
-        Los siguientes comandos están disponibles para su uso: \n
-        ✔️ /now {CIUDAD} {CODIGO_PAIS}
-        \t Devuelve el tiempo para la ciudad en estos momentos.\n
-        ✔️ /tomorrow {CIUDAD} {CODIGO_PAIS}
-        \t Devuelve el tiempo para la ciudad mañana.\n
-        ✔️ /help
-        \t imprime esta ayuda.\n
-        Recuerda que si me estás llamando dentro de un group, seguramente tengas
-        que usar el sufijo con mi nombre: /help@weatherwarnbot.\n
-        Tambien puedes probar a enviarme una localización.
-        `
-        );
+      } else if (c.command == "tomorrow") {
+        if (c.city && c.country) {
+          dl.info(`getting todays's forecast for ${c.city} (${c.country})`);
+          const forecast = await fetchWeather(c.city, c.country, Day.TODAY);
+          const message = buildForecastMessage(forecast);
+          context.response.body = response(chatId, message);
+        } else {
+          dl.warning("wrong command usage");
+          context.response.body = response(
+            chatId,
+            "Wrong command usage. Required format: '/now madrid ES'"
+          );
+        }
       } else {
         context.response.body = response(
           chatId,
