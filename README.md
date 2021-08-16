@@ -13,7 +13,9 @@ Tis basically a bot in Telegram for myself to check the weather. Work in Progres
 
 ## 🚀 Deploying
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Fmanzanit0%2Fweatherbot%2Ftree%2Fmaster%2F&plugins=postgresql&envs=OPENWEATHERMAP_API_KEY&OPENWEATHERMAP_API_KEYDesc=API+key+provided+by+https%3A%2F%2Fopenweathermap.org)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2FManzanit0%2Fweatherwarnbot%2Ftree%2Fmaster&plugins=postgresql&envs=OPENWEATHERMAP_API_KEY&OPENWEATHERMAP_API_KEYDesc=API+key+provided+by+https%3A%2F%2Fopenweathermap.org)
 
-As for the migrations, run them manually for now. Check the
+### What about the database?
+
+Regarding the migrations, run them manually for now. Check the
 [docker-compose.yml](./docker-compose.yml) file for inspiration.
