@@ -7,9 +7,11 @@ test:
 test-watch:
 	deno test --watch
 
-database-bootstrap:
+bootstrap:
 	docker compose up --build
 
-database-teardown:
+bootstrap-down:
 	docker-compose -f docker-compose.yml down --volumes
 
+set-telegram-webhook:
+	curl -X POST https://api.telegram.org/bot$(TELEGRAM_BOT_TOKEN)/setWebhook?url=$(APP_HOST)/api/telegram
