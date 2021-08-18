@@ -1,3 +1,2 @@
 CREATE USER docker WITH PASSWORD '123';
 CREATE DATABASE weatherbot_db OWNER docker;
-CREATE EXTENSION "uuid-ossp";
