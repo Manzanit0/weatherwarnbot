@@ -1,4 +1,4 @@
-import { Application, Router } from "https://deno.land/x/oak@v7.7.0/mod.ts";
+import { Application, Router } from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import {
   buildForecastMessage,
   Day,
@@ -6,6 +6,13 @@ import {
   fetchWeatherByCoordinates,
 } from "./forecast.ts";
 import { getLogger } from "./logger.ts";
+import {
+  ContextState,
+  handleErrors,
+  logRequest,
+  responseTimeHeader,
+  trackUser,
+} from "./middleware.ts";
 import { parseCommand, response, TelegramRequestBody } from "./telegram.ts";
 
 const dl = await getLogger();
@@ -25,7 +32,7 @@ router.post("/api/telegram", async (context) => {
       dl.info(`getting todays's forecast for location`);
       const forecast = await fetchWeatherByCoordinates(
         json.message.location.latitude,
-        json.message.location.longitude
+        json.message.location.longitude,
       );
       const message = buildForecastMessage(forecast);
       context.response.body = response(chatId, message);
@@ -51,7 +58,7 @@ router.post("/api/telegram", async (context) => {
         que usar el sufijo con mi nombre: /help@weatherwarnbot.
 
         Tambien puedes probar a enviarme una localización.
-        `
+        `,
         );
       } else if (c.command == "now") {
         dl.info(`getting todays's forecast for ${c.city} (${c.country})`);
@@ -68,13 +75,13 @@ router.post("/api/telegram", async (context) => {
           chatId,
           `
         Desconozco ese comando... prueba con /help para ver lo que conozco.
-        `
+        `,
         );
       }
     } else {
       context.response.body = response(
         chatId,
-        "What the hell did you just send me? STFU..."
+        "What the hell did you just send me? STFU...",
       );
     }
   } catch (error) {
@@ -83,26 +90,15 @@ router.post("/api/telegram", async (context) => {
   }
 });
 
-const app = new Application();
-
-// Logger
-app.use(async (ctx, next) => {
-  await next();
-  const rt = ctx.response.headers.get("X-Response-Time");
-  dl.info(`${ctx.request.method} ${ctx.request.url} - ${rt}`);
-  dl.debug(
-    `body - ${JSON.stringify(await ctx.request.body({ type: "json" }).value)}`
-  );
+const app = new Application<ContextState>({
+  state: { logger: dl },
+  contextState: "prototype",
 });
 
-// Timing
-app.use(async (ctx, next) => {
-  const start = Date.now();
-  await next();
-  const ms = Date.now() - start;
-  ctx.response.headers.set("X-Response-Time", `${ms}ms`);
-});
-
+app.use(handleErrors);
+app.use(responseTimeHeader);
+app.use(trackUser);
+app.use(logRequest);
 app.use(router.routes());
 app.use(router.allowedMethods());
 
