@@ -24,15 +24,13 @@ const router = new Router<RouteParams, ContextState>();
 
 router.post("/api/telegram", async (ctx) => {
   const json = ctx.state.payload!;
-  if (!json.message.location && !json.message.text) {
-    ctx.response.body = handleUnknownPayload(ctx);
-    return;
-  }
 
   if (json.message.location) {
     ctx.response.body = await handleLocation(ctx);
   } else if (json.message.text) {
     ctx.response.body = await handleCommand(ctx);
+  } else {
+    ctx.response.body = handleUnknownPayload(ctx);
   }
 });
 
