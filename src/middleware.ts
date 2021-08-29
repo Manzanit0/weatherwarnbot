@@ -40,6 +40,7 @@ export async function trackUser(ctx: OakContext, next: NxtFn) {
     user = await createUser({ telegramId: chatId });
   }
 
+  ctx.state.user = user;
   await next();
 }
 

@@ -1,4 +1,8 @@
-import { Application, Router } from "https://deno.land/x/oak@v9.0.0/mod.ts";
+import {
+  Application,
+  RouteParams,
+  Router,
+} from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import {
   buildForecastMessage,
   Day,
@@ -17,7 +21,7 @@ import { parseCommand, response, TelegramRequestBody } from "./telegram.ts";
 
 const dl = await getLogger();
 
-const router = new Router();
+const router = new Router<RouteParams, ContextState>();
 router.post("/api/telegram", async (context) => {
   const json = (await context.request.body({ type: "json" })
     .value) as TelegramRequestBody;
@@ -25,7 +29,8 @@ router.post("/api/telegram", async (context) => {
     throw new Error("no body in payload");
   }
 
-  const chatId = json.message.chat.id;
+  const user = context.state.user!;
+  const chatId = user.telegram_chat_id;
 
   try {
     if (json.message.location) {
