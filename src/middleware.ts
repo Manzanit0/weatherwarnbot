@@ -7,6 +7,7 @@ import { response, TelegramRequestBody } from "./telegram.ts";
 export type ContextState = {
   logger: Logger;
   user?: User;
+  payload?: TelegramRequestBody;
 };
 
 type OakContext = Context<ContextState, ContextState>;
@@ -63,4 +64,16 @@ export async function handleErrors(ctx: OakContext, next: NxtFn) {
       ctx.response.body = { error: `${err}` };
     }
   }
+}
+
+export async function parseBody(ctx: OakContext, next: NxtFn) {
+  const body = ctx.request.body({ type: "json" });
+  const json = (await body.value) as TelegramRequestBody;
+  if (!json) {
+    ctx.throw(Status.BadRequest, "unable to parse body as JSON.");
+  }
+
+  ctx.state.payload = json;
+
+  await next();
 }
