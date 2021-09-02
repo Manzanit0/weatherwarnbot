@@ -1,5 +1,10 @@
 import { Context } from "https://deno.land/x/oak@v9.0.0/context.ts";
-import { isHttpError, Status } from "https://deno.land/x/oak@v9.0.0/mod.ts";
+import {
+  isHttpError,
+  RouteParams,
+  RouterContext,
+  Status,
+} from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import { Logger } from "./logger.ts";
 import { createUser, findUser, User } from "./repository.ts";
 import { response, TelegramRequestBody } from "./telegram.ts";
@@ -10,8 +15,16 @@ export type ContextState = {
   payload?: TelegramRequestBody;
 };
 
-type OakContext = Context<ContextState, ContextState>;
+type OakContext =
+  | Context<ContextState, ContextState>
+  | RouterContext<RouteParams, ContextState>;
+
 type NxtFn = () => Promise<unknown>;
+
+export async function requestIdHeader(ctx: OakContext, next: NxtFn) {
+  ctx.response.headers.set("X-Request-Id", crypto.randomUUID());
+  await next();
+}
 
 export async function responseTimeHeader(ctx: OakContext, next: NxtFn) {
   const start = Date.now();
@@ -25,16 +38,16 @@ export async function logRequest(ctx: OakContext, next: NxtFn) {
 
   const dl = ctx.state.logger;
   const rt = ctx.response.headers.get("X-Response-Time");
-  dl.info(`${ctx.request.method} ${ctx.request.url} - ${rt}`);
-  dl.debug(
-    `body - ${JSON.stringify(await ctx.request.body({ type: "json" }).value)}`,
+
+  // FIXME: rt is always null.
+  dl.info(
+    `${ctx.request.method} ${ctx.request.url} - ${ctx.response.status} - ${rt}`,
   );
 }
 
 export async function trackUser(ctx: OakContext, next: NxtFn) {
-  const json = ctx.request.body({ type: "json" });
-  const body = await json.value as TelegramRequestBody;
-  const chatId = body.message.chat.id;
+  const json = ctx.state.payload!;
+  const chatId = json.message.chat.id;
 
   let user = await findUser(chatId);
   if (!user) {
@@ -42,6 +55,7 @@ export async function trackUser(ctx: OakContext, next: NxtFn) {
   }
 
   ctx.state.user = user;
+  ctx.state.logger.info(`handling request for user with chatId:${chatId}`);
   await next();
 }
 
@@ -51,29 +65,38 @@ export async function handleErrors(ctx: OakContext, next: NxtFn) {
   try {
     await next();
   } catch (err) {
+    const u = ctx.request.url;
+    const m = ctx.request.method;
+    const b = await ctx.request.body({ type: "text" }).value;
+    dl.warning(`request failed: ${m} ${u} - ${b}`);
+    dl.error(`error: ${err}`);
+
     const user = ctx.state.user;
     if (isHttpError(err)) {
-      ctx.response.body = err.message;
+      ctx.response.body = { error: err.message };
       ctx.response.status = err.status;
     } else if (user) {
-      dl.error(`User ${user.telegram_chat_id} triggered error "${err}"`);
-      ctx.response.body = response(user.telegram_chat_id, err);
+      ctx.response.body = response(user.telegram_chat_id, `${err}`);
     } else {
-      dl.error(`unknown error ${err}`);
       ctx.response.status = Status.InternalServerError;
       ctx.response.body = { error: `${err}` };
     }
   }
 }
 
-export async function parseBody(ctx: OakContext, next: NxtFn) {
+export async function parseTelegramWebhookBody(ctx: OakContext, next: NxtFn) {
+  if (!ctx.request.hasBody) {
+    ctx.throw(Status.BadRequest, "no payload sent");
+  }
+
   const body = ctx.request.body({ type: "json" });
   const json = (await body.value) as TelegramRequestBody;
-  if (!json) {
-    ctx.throw(Status.BadRequest, "unable to parse body as JSON.");
+
+  // TODO: we actually need to assert the whole thing here.
+  if (!json || !json.message || !json.message?.chat?.id) {
+    ctx.throw(Status.BadRequest, "payload doesn't fulfill Telegram schema");
   }
 
   ctx.state.payload = json;
-
   await next();
 }
