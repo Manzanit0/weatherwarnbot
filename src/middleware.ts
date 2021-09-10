@@ -7,7 +7,7 @@ import {
 } from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import { Logger } from "./logger.ts";
 import { createUser, findUser, User } from "./repository.ts";
-import { response, TelegramRequestBody } from "./telegram.ts";
+import { getChatId, response, TelegramRequestBody } from "./telegram.ts";
 
 export type ContextState = {
   logger: Logger;
@@ -45,9 +45,31 @@ export async function logRequest(ctx: OakContext, next: NxtFn) {
   );
 }
 
+export async function parseTelegramWebhookBody(ctx: OakContext, next: NxtFn) {
+  if (!ctx.request.hasBody) {
+    ctx.throw(Status.BadRequest, "no payload sent");
+  }
+
+  const body = ctx.request.body({ type: "json" });
+  const json = (await body.value) as TelegramRequestBody;
+
+  // TODO: we actually need to assert the whole thing here.
+  const isInvalidMessage = !json?.message || !json?.message?.chat?.id;
+  const isInvalidCallback = !json?.callback_query;
+  if (!json || (isInvalidCallback && isInvalidMessage)) {
+    ctx.throw(Status.BadRequest, "payload doesn't fulfill Telegram schema");
+  }
+
+  ctx.state.payload = json;
+  await next();
+}
+
 export async function trackUser(ctx: OakContext, next: NxtFn) {
   const json = ctx.state.payload!;
-  const chatId = json.message.chat.id;
+  const chatId = getChatId(json);
+  if (!chatId) {
+    ctx.throw(Status.BadRequest, "missing chat_id in Telegram payload.");
+  }
 
   let user = await findUser(chatId);
   if (!user) {
@@ -82,21 +104,4 @@ export async function handleErrors(ctx: OakContext, next: NxtFn) {
       ctx.response.body = { error: `${err}` };
     }
   }
-}
-
-export async function parseTelegramWebhookBody(ctx: OakContext, next: NxtFn) {
-  if (!ctx.request.hasBody) {
-    ctx.throw(Status.BadRequest, "no payload sent");
-  }
-
-  const body = ctx.request.body({ type: "json" });
-  const json = (await body.value) as TelegramRequestBody;
-
-  // TODO: we actually need to assert the whole thing here.
-  if (!json || !json.message || !json.message?.chat?.id) {
-    ctx.throw(Status.BadRequest, "payload doesn't fulfill Telegram schema");
-  }
-
-  ctx.state.payload = json;
-  await next();
 }

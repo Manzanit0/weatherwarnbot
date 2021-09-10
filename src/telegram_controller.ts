@@ -9,13 +9,40 @@ import {
   fetchWeatherByCoordinates,
 } from "./forecast.ts";
 import { ContextState } from "./middleware.ts";
-import { parseCommand, response } from "./telegram.ts";
+import {
+  answerCallbackQuery,
+  parseCommand,
+  response,
+  withInlineMenu,
+} from "./telegram.ts";
+
+export async function handleCallback(
+  ctx: RouterContext<RouteParams, ContextState>,
+) {
+  const json = ctx.state.payload!;
+
+  if (!json.callback_query) {
+    throw new Error("telegram payload missing callback_query");
+  }
+
+  switch (json.callback_query.data) {
+    case "location":
+      // TODO: Validate that location isn't already bookmarked, and save it to
+      // user_locations if it isn't.
+      await answerCallbackQuery(json, "Location Bookmarked!");
+      break;
+
+    default:
+      await answerCallbackQuery(json, "WTF?!");
+      break;
+  }
+}
 
 export async function handleLocation(
   ctx: RouterContext<RouteParams, ContextState>,
 ) {
   const json = ctx.state.payload!;
-  if (!json.message.location) {
+  if (!json.message || !json.message.location) {
     throw new Error("telegram payload missing location");
   }
 
@@ -33,13 +60,13 @@ export async function handleCommand(
   ctx: RouterContext<RouteParams, ContextState>,
 ) {
   const json = ctx.state.payload!;
-  if (!json.message.text) {
+  if (!json.message!.text) {
     throw new Error("telegram payload missing text");
   }
 
   const chatId = ctx.state.user!.telegram_chat_id;
 
-  const c = parseCommand(json.message.text);
+  const c = parseCommand(json.message!.text);
 
   if (c.command == "help") {
     return response(
@@ -68,14 +95,14 @@ export async function handleCommand(
     );
     const forecast = await fetchWeather(c.city!, c.country!, Day.TODAY);
     const message = buildForecastMessage(forecast);
-    return response(chatId, message);
+    return withInlineMenu(response(chatId, message));
   } else if (c.command == "tomorrow") {
     ctx.state.logger.info(
       `getting todays's forecast for ${c.city} (${c.country})`,
     );
     const forecast = await fetchWeather(c.city!, c.country!, Day.TOMORROW);
     const message = buildForecastMessage(forecast);
-    return response(chatId, message);
+    return withInlineMenu(response(chatId, message));
   } else {
     return response(
       chatId,

@@ -2,7 +2,6 @@ import {
   Application,
   RouteParams,
   Router,
-  Status,
 } from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import { getLogger } from "./logger.ts";
 import {
@@ -14,6 +13,7 @@ import {
   trackUser,
 } from "./middleware.ts";
 import {
+  handleCallback,
   handleCommand,
   handleLocation,
   handleUnknownPayload,
@@ -33,12 +33,17 @@ telegramRouter.post("/", async (ctx) => {
   // We can assert the payload is here because the middleware does so, or throws.
   const json = ctx.state.payload!;
 
-  if (json.message.location) {
-    ctx.response.body = await handleLocation(ctx);
-  } else if (json.message.text) {
-    ctx.response.body = await handleCommand(ctx);
-  } else {
-    ctx.response.body = handleUnknownPayload(ctx);
+  if (json.message) {
+    if (json.message.location) {
+      ctx.response.body = await handleLocation(ctx);
+    } else if (json.message.text) {
+      ctx.response.body = await handleCommand(ctx);
+    } else {
+      ctx.response.body = handleUnknownPayload(ctx);
+    }
+  } else if (json.callback_query) {
+    await handleCallback(ctx);
+    ctx.response.body = "";
   }
 });
 
