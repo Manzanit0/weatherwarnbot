@@ -12,6 +12,7 @@ import {
   responseTimeHeader,
   trackUser,
 } from "./middleware.ts";
+import { PositionStackClient } from "./positionstack.ts";
 import {
   handleCallback,
   handleCommand,
@@ -48,8 +49,9 @@ telegramRouter.post("/", async (ctx) => {
 });
 
 const dl = await getLogger();
+const pc = new PositionStackClient(dl);
 const app = new Application<ContextState>({
-  state: { logger: dl },
+  state: { logger: dl, geolocationClient: pc },
   contextState: "prototype",
 });
 

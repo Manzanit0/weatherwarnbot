@@ -6,10 +6,12 @@ import {
   Status,
 } from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import { Logger } from "./logger.ts";
+import { GeolocationClient } from "./positionstack.ts";
 import { createUser, findUser, User } from "./repository.ts";
 import { getChatId, response, TelegramRequestBody } from "./telegram.ts";
 
 export type ContextState = {
+  geolocationClient: GeolocationClient;
   logger: Logger;
   user?: User;
   payload?: TelegramRequestBody;

@@ -86,6 +86,27 @@ export async function createUserLocation(
   };
 }
 
+export async function findUserLocation(name: string) {
+  const result = await runQuery<DbUserLocation>(
+    "SELECT id, user_id, name, coordinates FROM user_locations WHERE name = $1",
+    name,
+  );
+
+  if (!result) {
+    throw new Error("no result returned from query");
+  }
+
+  if (result.rowCount == 0) {
+    return null;
+  }
+
+  if (result.rowCount && result.rowCount > 1) {
+    throw new Error('found multiple contacts by the same "telegram_chat_id"');
+  }
+
+  return result.rows[0];
+}
+
 async function runQuery<T>(query: string, ...args: string[]) {
   await client.connect();
   const result = await client.queryObject<T>(query, ...args);

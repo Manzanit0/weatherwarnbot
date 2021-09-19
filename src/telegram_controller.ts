@@ -9,6 +9,7 @@ import {
   fetchWeatherByCoordinates,
 } from "./forecast.ts";
 import { ContextState } from "./middleware.ts";
+import { createUserLocation, findUserLocation } from "./repository.ts";
 import {
   answerCallbackQuery,
   parseCommand,
@@ -25,17 +26,55 @@ export async function handleCallback(
     throw new Error("telegram payload missing callback_query");
   }
 
-  switch (json.callback_query.data) {
-    case "location":
-      // TODO: Validate that location isn't already bookmarked, and save it to
-      // user_locations if it isn't.
-      await answerCallbackQuery(json, "Location Bookmarked!");
-      break;
-
-    default:
-      await answerCallbackQuery(json, "WTF?!");
-      break;
+  const data = json.callback_query.data;
+  if (!json.callback_query.data.includes("location")) {
+    await answerCallbackQuery(json, `received ${data} callback`);
+    return;
   }
+
+  // FIXME: Temporary hack which assumes specific message.
+  // \ud83d\udea9 Torrejon de la calzada (ES)\n    - - - - -
+  // Ideally the callback data would contain the location name.
+  const name = json.callback_query.message.text
+    .split("(")
+    .shift()
+    ?.split(" ")
+    ?.slice(1)
+    ?.join(" ")
+    ?.trim();
+  if (!name) {
+    throw new Error("Got a message that was not expecting");
+  }
+
+  const location = await findUserLocation(name);
+  if (location) {
+    await answerCallbackQuery(json, "Location already bookmarked!");
+    return;
+  }
+
+  const geolocation = await ctx.state.geolocationClient.findLocation(name);
+  if (!geolocation) {
+    await answerCallbackQuery(json, "Unable to geolocate location by name");
+    return;
+  }
+
+  ctx.state.logger.info(
+    `found location ${geolocation.name} through PositionStack`,
+  );
+
+  ctx.state.logger.debug(`location=${JSON.stringify(geolocation)}`);
+
+  // TODO: we can enrich the record by persisting the whole payload.
+  await createUserLocation({
+    user_id: ctx.state.user!.id,
+    name: geolocation.name,
+    coordinates: {
+      latitude: geolocation.latitude,
+      longitude: geolocation.longitude,
+    },
+  });
+
+  await answerCallbackQuery(json, "Location bookmarked!");
 }
 
 export async function handleLocation(
