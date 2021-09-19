@@ -64,16 +64,19 @@ type CreateLocationParams = {
   user_id: string;
   name?: string;
   coordinates: Coordinates;
+  // It doesn't matter because we're just going to store it as a json blob.
+  positionstack?: unknown;
 };
 
 export async function createUserLocation(
   params: CreateLocationParams,
 ): Promise<UserLocation> {
   const result = await runQuery<DbUserLocation>(
-    "INSERT INTO user_locations (user_id, name, coordinates) VALUES ($1, $2, $3) RETURNING id, user_id, name, coordinates",
+    "INSERT INTO user_locations (user_id, name, coordinates, positionstack_response) VALUES ($1, $2, $3, $4) RETURNING id, user_id, name, coordinates",
     params.user_id,
     params.name || "",
     encodeCoordinates(params.coordinates),
+    JSON.stringify(params.positionstack),
   );
 
   if (result.rowCount != 1 || !result.rows[0]) {

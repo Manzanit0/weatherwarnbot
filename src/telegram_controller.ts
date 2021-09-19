@@ -64,7 +64,6 @@ export async function handleCallback(
 
   ctx.state.logger.debug(`location=${JSON.stringify(geolocation)}`);
 
-  // TODO: we can enrich the record by persisting the whole payload.
   await createUserLocation({
     user_id: ctx.state.user!.id,
     name: geolocation.name,
@@ -72,6 +71,7 @@ export async function handleCallback(
       latitude: geolocation.latitude,
       longitude: geolocation.longitude,
     },
+    positionstack: geolocation,
   });
 
   await answerCallbackQuery(json, "Location bookmarked!");
