@@ -91,7 +91,7 @@ export async function createUserLocation(
 
 export async function findUserLocation(name: string) {
   const result = await runQuery<DbUserLocation>(
-    "SELECT id, user_id, name, coordinates FROM user_locations WHERE name = $1",
+    "SELECT id, user_id, name, coordinates FROM user_locations WHERE LOWER(name) = LOWER($1)",
     name,
   );
 
