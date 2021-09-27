@@ -9,72 +9,64 @@ import {
   fetchWeatherByCoordinates,
 } from "./forecast.ts";
 import { ContextState } from "./middleware.ts";
-import { createUserLocation, findUserLocation } from "./repository.ts";
+import {
+  createUserLocation,
+  findUserLocation,
+  listUserLocations,
+} from "./repository.ts";
 import {
   answerCallbackQuery,
   parseCommand,
   response,
+  sendMessage,
+  withForecastRequestInlineMenu,
   withInlineMenu,
 } from "./telegram.ts";
 
+// handleCallback handles (or will handle at some point ;-)) the following series of callback data:
+// - forecast:new:<location>
+// - forecast:tomorrow:<location>
+// - location:new:<location>
+// Where <location> is the location name.
 export async function handleCallback(
   ctx: RouterContext<RouteParams, ContextState>,
 ) {
   const json = ctx.state.payload!;
-
-  if (!json.callback_query) {
+  const data = json.callback_query?.data;
+  if (!data) {
     throw new Error("telegram payload missing callback_query");
   }
 
-  const data = json.callback_query.data;
-  if (!json.callback_query.data.includes("location")) {
+  if (data === "location") {
+    await bookmarkLocation(ctx);
+    await answerCallbackQuery(json, "Location bookmarked!");
+  } else if (data.includes("forecast:now")) {
+    const name = data.split(":")[2];
+    if (!name) {
+      throw new Error("Unable to extract location name from callback_query");
+    }
+
+    // To receive this kind of payload, the location must have been bookmarked.
+    const location = await findUserLocation(name, ctx.state.user!.id);
+    if (!location) {
+      throw new Error(
+        "received forecast:now callback for a location that doesn't exist",
+      );
+    }
+
+    const forecast = await fetchWeatherByCoordinates(
+      location.coordinates.latitude,
+      location.coordinates.longitude,
+    );
+
+    await answerCallbackQuery(json, `Fetching weather for ${name}`);
+    const message = buildForecastMessage({ ...forecast, location: name });
+    sendMessage(ctx.state.user!.telegram_chat_id, message);
+    return;
+  } else {
     await answerCallbackQuery(json, `received ${data} callback`);
     return;
   }
-
-  // FIXME: Temporary hack which assumes specific message.
-  // \ud83d\udea9 Torrejon de la calzada (ES)\n    - - - - -
-  // Ideally the callback data would contain the location name.
-  const name = json.callback_query.message.text
-    .split("(")
-    .shift()
-    ?.split(" ")
-    ?.slice(1)
-    ?.join(" ")
-    ?.trim();
-  if (!name) {
-    throw new Error("Got a message that was not expecting");
-  }
-
-  const location = await findUserLocation(name);
-  if (location) {
-    await answerCallbackQuery(json, "Location already bookmarked!");
-    return;
-  }
-
-  const geolocation = await ctx.state.geolocationClient.findLocation(name);
-  if (!geolocation) {
-    await answerCallbackQuery(json, "Unable to geolocate location by name");
-    return;
-  }
-
-  ctx.state.logger.info(
-    `found location ${geolocation.name} through PositionStack`,
-  );
-
-  ctx.state.logger.debug(`location=${JSON.stringify(geolocation)}`);
-
-  await createUserLocation({
-    user_id: ctx.state.user!.id,
-    name: geolocation.name,
-    coordinates: {
-      latitude: geolocation.latitude,
-      longitude: geolocation.longitude,
-    },
-    positionstack: geolocation,
-  });
-
-  await answerCallbackQuery(json, "Location bookmarked!");
 }
 
 export async function handleLocation(
@@ -104,6 +96,24 @@ export async function handleCommand(
   }
 
   const chatId = ctx.state.user!.telegram_chat_id;
+
+  // Shortlist empty command.
+  const lowerCaseText = json.message!.text
+    .toLowerCase()
+    .trim()
+    .replace("/", "");
+
+  if (lowerCaseText === "now" || lowerCaseText === "tomorrow") {
+    const locationNames = (await listUserLocations(ctx.state.user!.id)).map(
+      (x) => x.name!,
+    );
+
+    return withForecastRequestInlineMenu(
+      response(chatId, "Which location do you want to check the weather for?"),
+      lowerCaseText,
+      locationNames,
+    );
+  }
 
   const c = parseCommand(json.message!.text);
 
@@ -160,4 +170,54 @@ export function handleUnknownPayload(
     chatId,
     "What the hell did you just send me? STFU...",
   );
+}
+
+// FIXME: Temporary hack which assumes specific message.
+// \ud83d\udea9 Torrejon de la calzada (ES)\n    - - - - -
+// Ideally the callback data would contain the location name.
+const extractLocationNameFromMessage = (msg: string) =>
+  msg.split("(").shift()?.split(" ")?.slice(1)?.join(" ")?.trim();
+
+async function bookmarkLocation(ctx: RouterContext<RouteParams, ContextState>) {
+  const json = ctx.state.payload!;
+
+  const message = json?.callback_query?.message?.text;
+  if (!message) {
+    throw new Error("callback_query doesn't contain reference message");
+  }
+
+  const name = extractLocationNameFromMessage(message);
+  if (!name) {
+    throw new Error(
+      "Unable to extract location name from reference message in callback_query",
+    );
+  }
+
+  const location = await findUserLocation(name, ctx.state.user!.id);
+  if (location) {
+    await answerCallbackQuery(json, "Location already bookmarked!");
+    return;
+  }
+
+  const geolocation = await ctx.state.geolocationClient.findLocation(name);
+  if (!geolocation) {
+    await answerCallbackQuery(json, "Unable to geolocate location by name");
+    return;
+  }
+
+  ctx.state.logger.info(
+    `found location ${geolocation.name} through PositionStack`,
+  );
+
+  ctx.state.logger.debug(`location=${JSON.stringify(geolocation)}`);
+
+  return createUserLocation({
+    user_id: ctx.state.user!.id,
+    name: geolocation.name,
+    coordinates: {
+      latitude: geolocation.latitude,
+      longitude: geolocation.longitude,
+    },
+    positionstack: geolocation,
+  });
 }

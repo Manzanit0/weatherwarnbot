@@ -89,10 +89,11 @@ export async function createUserLocation(
   };
 }
 
-export async function findUserLocation(name: string) {
+export async function findUserLocation(name: string, userId: string): Promise<UserLocation | null> {
   const result = await runQuery<DbUserLocation>(
-    "SELECT id, user_id, name, coordinates FROM user_locations WHERE LOWER(name) = LOWER($1)",
+    "SELECT id, user_id, name, coordinates FROM user_locations WHERE LOWER(name) = LOWER($1) AND user_id = $2",
     name,
+    userId,
   );
 
   if (!result) {
@@ -104,10 +105,35 @@ export async function findUserLocation(name: string) {
   }
 
   if (result.rowCount && result.rowCount > 1) {
-    throw new Error('found multiple contacts by the same "telegram_chat_id"');
+    throw new Error('found multiple locations with the same name for the same user');
   }
 
-  return result.rows[0];
+  return {
+    ...result.rows[0],
+    coordinates: decodeCoordinates(result.rows[0].coordinates),
+  };
+}
+
+export async function listUserLocations(
+  userId: string,
+): Promise<UserLocation[]> {
+  const result = await runQuery<DbUserLocation>(
+    "SELECT id, user_id, name, coordinates FROM user_locations WHERE user_id = $1",
+    userId,
+  );
+
+  if (!result) {
+    throw new Error("no result returned from query");
+  }
+
+  if (result.rowCount == 0) {
+    return [];
+  }
+
+  return result.rows.map((x) => ({
+    ...x,
+    coordinates: decodeCoordinates(x.coordinates),
+  }));
 }
 
 async function runQuery<T>(query: string, ...args: string[]) {

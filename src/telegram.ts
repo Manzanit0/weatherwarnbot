@@ -47,6 +47,8 @@ type InlineKeyBoardElement = {
 
 type InlineKeyBoard = InlineKeyBoardElement[][];
 
+type KeyBoard = string[][];
+
 type TelegramResponseBody = {
   method: TelegramAPIMethod;
   chat_id: string;
@@ -54,6 +56,9 @@ type TelegramResponseBody = {
   parse_mode: TelegramParseMode;
   reply_markup?: {
     inline_keyboard?: InlineKeyBoard;
+    // Fields for custom keyboards
+    one_time_keyboard?: boolean;
+    keyboard?: KeyBoard;
   };
 };
 
@@ -99,6 +104,26 @@ export async function answerCallbackQuery(
   }
 }
 
+export async function sendMessage(chatId: string, message: string) {
+  const req = await fetch(
+    `https://api.telegram.org/bot${botToken}/sendMessage`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+      }),
+    },
+  );
+
+  if (!req.ok) {
+    throw new Error(`failed to to sendMessage: status=${req.status}`);
+  }
+}
+
 export function withInlineMenu(
   res: TelegramResponseBody,
 ): TelegramResponseBody {
@@ -117,8 +142,38 @@ export function withInlineMenu(
   };
 }
 
+export function withForecastRequestInlineMenu(
+  res: TelegramResponseBody,
+  command: TelegramWeatherRequestCommand,
+  locations: string[],
+): TelegramResponseBody {
+  return {
+    ...res,
+    reply_markup: {
+      inline_keyboard: locations.map((
+        x,
+      ) => ([{ text: x, callback_data: `forecast:${command}:${x}` }])),
+    },
+  };
+}
+
+export function withLocationsKeyboard(
+  res: TelegramResponseBody,
+  locations: string[],
+): TelegramResponseBody {
+  return {
+    ...res,
+    reply_markup: {
+      one_time_keyboard: true,
+      keyboard: [locations],
+    },
+  };
+}
+
+type TelegramWeatherRequestCommand = "now" | "tomorrow";
+
 type TelegramCommand = {
-  command: "now" | "tomorrow" | "help";
+  command: TelegramWeatherRequestCommand | "help";
   city?: string;
   country?: string;
 };
