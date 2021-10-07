@@ -20,29 +20,33 @@ export enum Day {
   IN_FIVE_DAYS,
 }
 
-export async function fetchWeather(
+export async function fetchWeatherByName(
   city: string,
   countryCode: string,
-  when: Day
+  when: Day = Day.TODAY,
 ) {
   const response = await api.requestDailyForecast(city, countryCode);
   const forecast = response.list[when];
   return mapForecastData(forecast, city, countryCode.toUpperCase());
 }
 
-export async function fetchWeatherByCoordinates(lat: number, lon: number) {
+export async function fetchWeatherByCoordinates(
+  lat: number,
+  lon: number,
+  when: Day = Day.TODAY,
+) {
   const response = await api.requestDailyForecastByCoordinate({
     latitude: lat,
     longitude: lon,
   });
-  const forecast = response.list[Day.TODAY];
+  const forecast = response.list[when];
   return mapForecastData(forecast, "", "N/a");
 }
 
 export function buildForecastMessage(forecast: Forecast) {
   const UNIX_DT_TRANSFORM_RATIO = 1000;
   const dateString = new Date(
-    forecast.dateUnixTimestamp * UNIX_DT_TRANSFORM_RATIO
+    forecast.dateUnixTimestamp * UNIX_DT_TRANSFORM_RATIO,
   ).toDateString();
 
   return `🚩 ${forecast.location}
@@ -59,12 +63,11 @@ export function buildForecastMessage(forecast: Forecast) {
 function mapForecastData(
   forecast: api.DayForecast,
   city: string,
-  countryCode: string
+  countryCode: string,
 ) {
   const condition = api.getWeatherCondition(forecast);
   return {
-    isClear:
-      condition == api.WeatherCondition.Clear ||
+    isClear: condition == api.WeatherCondition.Clear ||
       condition == api.WeatherCondition.Clouds,
     location: `${city} (${countryCode})`,
     description: forecast.weather[0].description,

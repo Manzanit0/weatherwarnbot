@@ -5,8 +5,8 @@ import {
 import {
   buildForecastMessage,
   Day,
-  fetchWeather,
   fetchWeatherByCoordinates,
+  fetchWeatherByName,
 } from "./forecast.ts";
 import { ContextState } from "./middleware.ts";
 import {
@@ -142,14 +142,18 @@ export async function handleCommand(
     ctx.state.logger.info(
       `getting todays's forecast for ${c.city} (${c.country})`,
     );
-    const forecast = await fetchWeather(c.city!, c.country!, Day.TODAY);
+    const forecast = await fetchWeatherByName(c.city!, c.country!, Day.TODAY);
     const message = buildForecastMessage(forecast);
     return withInlineMenu(response(chatId, message));
   } else if (c.command == "tomorrow") {
     ctx.state.logger.info(
       `getting todays's forecast for ${c.city} (${c.country})`,
     );
-    const forecast = await fetchWeather(c.city!, c.country!, Day.TOMORROW);
+    const forecast = await fetchWeatherByName(
+      c.city!,
+      c.country!,
+      Day.TOMORROW,
+    );
     const message = buildForecastMessage(forecast);
     return withInlineMenu(response(chatId, message));
   } else {
