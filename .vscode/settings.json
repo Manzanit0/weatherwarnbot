@@ -1,5 +1,6 @@
 {
   "deno.enable": true,
+  "deno.config": "./deno.jsonc",
   "deno.lint": true,
   "deno.unstable": false,
   "deno.suggest.imports.hosts": {
