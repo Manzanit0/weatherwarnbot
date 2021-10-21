@@ -9,16 +9,13 @@ export type User = {
   telegram_chat_id: string;
 };
 
-export function findUser(telegramId: string): Promise<User | null> {
-  const query = `SELECT id, telegram_chat_id FROM users WHERE telegram_chat_id = '${telegramId}'`;
-  return runQuery<User>(query).then(unwrapOneUser);
-}
+export const findUser = (telegramId: string) =>
+  runQuery<User>(`SELECT id, telegram_chat_id FROM users WHERE telegram_chat_id = '${telegramId}'`)
+    .then(unwrapMaybeOneUser);
 
-export function createUser({ telegramId }: { telegramId: string }): Promise<User> {
-  const query = `INSERT INTO users (telegram_chat_id) VALUES ('${telegramId}') RETURNING id, telegram_chat_id`;
-  console.log(query);
-  return runQuery<User>(query).then(unwrapOneUser);
-}
+export const createUser = ({ telegramId }: { telegramId: string }) =>
+  runQuery<User>(`INSERT INTO users (telegram_chat_id) VALUES ('${telegramId}') RETURNING id, telegram_chat_id`)
+    .then(unwrapOneUser);
 
 // Location Repository
 
@@ -46,7 +43,7 @@ type CreateLocationParams = {
   positionstack?: unknown;
 };
 
-export function createUserLocation(params: CreateLocationParams): Promise<UserLocation> {
+export const createUserLocation = (params: CreateLocationParams) => {
   const name = params.name || "";
   const positionstack = JSON.stringify(params.positionstack);
   const coordinates = encodeCoordinates(params.coordinates);
@@ -57,23 +54,18 @@ export function createUserLocation(params: CreateLocationParams): Promise<UserLo
      RETURNING id, user_id, name, coordinates`;
 
   return runQuery<DbUserLocation>(query).then(unwrapOneLocation);
-}
+};
 
-export function findUserLocation(name: string, userId: string): Promise<UserLocation | null> {
-  const query = `SELECT id, user_id, name, coordinates
-                 FROM user_locations
-                 WHERE LOWER(name) = LOWER('${name}')
-                 AND user_id = '${userId}'`;
+export const findUserLocation = (name: string, userId: string) =>
+  runQuery<DbUserLocation>(
+    `SELECT id, user_id, name, coordinates FROM user_locations WHERE LOWER(name) = LOWER('${name}') AND user_id = '${userId}'`,
+  ).then(unwrapMaybeOneLocation);
 
-  return runQuery<DbUserLocation>(query).then(unwrapOneLocation);
-}
+export const listUserLocations = (userId: string) =>
+  runQuery<DbUserLocation>(`SELECT id, user_id, name, coordinates FROM user_locations WHERE user_id = '${userId}'`)
+    .then(unwrapLocations);
 
-export function listUserLocations(userId: string): Promise<UserLocation[]> {
-  const query = `SELECT id, user_id, name, coordinates FROM user_locations WHERE user_id = '${userId}'`;
-  return runQuery<DbUserLocation>(query).then(unwrapLocations);
-}
-
-function decodeCoordinates(coordinates: string): Coordinates {
+const decodeCoordinates = (coordinates: string) => {
   const result = coordinates.match(
     /^\((?<latitude>[\.\-\d]*),(?<longitude>[\.\-\d]*)\)$/,
   );
@@ -88,20 +80,25 @@ function decodeCoordinates(coordinates: string): Coordinates {
   return {
     latitude: Number(result.groups.latitude),
     longitude: Number(result.groups.longitude),
-  };
-}
+  } as Coordinates;
+};
 
-function encodeCoordinates(coordinates: Coordinates) {
-  return `(${coordinates.latitude}, ${coordinates.longitude})`;
-}
+const encodeCoordinates = (coordinates: Coordinates) => `(${coordinates.latitude}, ${coordinates.longitude})`;
 
-const toUserLocation = (x: DbUserLocation): UserLocation => ({
-  ...x,
-  coordinates: decodeCoordinates(x.coordinates),
-});
+const toUserLocation = (x: DbUserLocation) => ({ ...x, coordinates: decodeCoordinates(x.coordinates) } as UserLocation);
 
-const unwrapOneUser = R.curry(unwrapOne)(R.identity);
+const assertOne = <T>(x: T | null | undefined) => x || throwError("a record was expected, got null | undefined");
 
-const unwrapLocations = R.curry(unwrapMany)(toUserLocation);
+const unwrapMaybeOneUser: () => User | null = R.curry(unwrapOne)(R.identity);
 
-const unwrapOneLocation = R.curry(unwrapOne)(toUserLocation);
+const unwrapOneUser: () => User = R.compose(assertOne, unwrapMaybeOneUser);
+
+const unwrapLocations: () => UserLocation[] = R.curry(unwrapMany)(toUserLocation);
+
+const unwrapMaybeOneLocation: () => UserLocation | null = R.curry(unwrapOne)(toUserLocation);
+
+const unwrapOneLocation: () => UserLocation = R.compose(assertOne, unwrapMaybeOneLocation);
+
+const throwError = (m: string) => {
+  throw new Error(m);
+};
