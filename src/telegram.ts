@@ -28,7 +28,7 @@ type TelegramMessage = {
   language_code?: string;
 };
 
-type TelegramRequestBody = {
+export type TelegramRequestBody = {
   update_id: string;
   message?: TelegramMessage;
   callback_query?: {
@@ -49,7 +49,7 @@ type InlineKeyBoard = InlineKeyBoardElement[][];
 
 type KeyBoard = string[][];
 
-type TelegramResponseBody = {
+export type TelegramResponseBody = {
   method: TelegramAPIMethod;
   chat_id: string;
   text: string;
@@ -72,7 +72,7 @@ export function getChatId(body: TelegramRequestBody) {
   }
 }
 
-function response(chatId: string, text: string): TelegramResponseBody {
+export function response(chatId: string, text: string): TelegramResponseBody {
   return {
     method: "sendMessage",
     chat_id: chatId,
@@ -81,10 +81,7 @@ function response(chatId: string, text: string): TelegramResponseBody {
   };
 }
 
-export async function answerCallbackQuery(
-  { callback_query: query }: TelegramRequestBody,
-  message: string,
-) {
+export async function answerCallbackQuery({ callback_query: query }: TelegramRequestBody, message: string) {
   const req = await fetch(
     `https://api.telegram.org/bot${botToken}/answerCallbackQuery`,
     {
@@ -105,28 +102,23 @@ export async function answerCallbackQuery(
 }
 
 export async function sendMessage(chatId: string, message: string) {
-  const req = await fetch(
-    `https://api.telegram.org/bot${botToken}/sendMessage`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-      }),
+  const req = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: message,
+    }),
+  });
 
   if (!req.ok) {
     throw new Error(`failed to to sendMessage: status=${req.status}`);
   }
 }
 
-export function withInlineMenu(
-  res: TelegramResponseBody,
-): TelegramResponseBody {
+export function withInlineMenu(res: TelegramResponseBody): TelegramResponseBody {
   return {
     ...res,
     reply_markup: {
@@ -157,10 +149,7 @@ export function withForecastRequestInlineMenu(
   };
 }
 
-export function withLocationsKeyboard(
-  res: TelegramResponseBody,
-  locations: string[],
-): TelegramResponseBody {
+export function withLocationsKeyboard(res: TelegramResponseBody, locations: string[]): TelegramResponseBody {
   return {
     ...res,
     reply_markup: {
@@ -178,7 +167,7 @@ type TelegramCommand = {
   country?: string;
 };
 
-function parseCommand(command: string): TelegramCommand {
+export function parseCommand(command: string): TelegramCommand {
   if (command.includes("/help")) {
     return { command: "help" };
   }
@@ -200,6 +189,3 @@ function parseCommand(command: string): TelegramCommand {
     throw new Error("unknown command");
   }
 }
-
-export { parseCommand, response };
-export type { TelegramRequestBody, TelegramResponseBody };

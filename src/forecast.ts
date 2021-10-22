@@ -20,34 +20,17 @@ export enum Day {
   IN_FIVE_DAYS,
 }
 
-export async function fetchWeatherByName(
-  city: string,
-  countryCode: string,
-  when: Day = Day.TODAY,
-) {
-  const response = await api.requestDailyForecast(city, countryCode);
-  const forecast = response.list[when];
-  return mapForecastData(forecast, city, countryCode.toUpperCase());
-}
+export const fetchWeatherByName = (city: string, countryCode: string, when: Day = Day.TODAY) =>
+  api.requestDailyForecast(city, countryCode)
+    .then((x) => mapForecastData(x.list[when], city, countryCode.toUpperCase()));
 
-export async function fetchWeatherByCoordinates(
-  lat: number,
-  lon: number,
-  when: Day = Day.TODAY,
-) {
-  const response = await api.requestDailyForecastByCoordinate({
-    latitude: lat,
-    longitude: lon,
-  });
-  const forecast = response.list[when];
-  return mapForecastData(forecast, "", "N/a");
-}
+export const fetchWeatherByCoordinates = (lat: number, lon: number, when: Day = Day.TODAY) =>
+  api.requestDailyForecastByCoordinate({ latitude: lat, longitude: lon })
+    .then((x) => mapForecastData(x.list[when], "", "N/a"));
 
-export function buildForecastMessage(forecast: Forecast) {
+export const buildForecastMessage = (forecast: Forecast) => {
   const UNIX_DT_TRANSFORM_RATIO = 1000;
-  const dateString = new Date(
-    forecast.dateUnixTimestamp * UNIX_DT_TRANSFORM_RATIO,
-  ).toDateString();
+  const dateString = new Date(forecast.dateUnixTimestamp * UNIX_DT_TRANSFORM_RATIO).toDateString();
 
   return `🚩 ${forecast.location}
     - - - - - - - - - - - - - - - - - - - - - -
@@ -58,17 +41,12 @@ export function buildForecastMessage(forecast: Forecast) {
     💨 ${forecast.windSpeed} m/s
     - - - - - - - - - - - - - - - - - - - - - -
     `;
-}
+};
 
-function mapForecastData(
-  forecast: api.DayForecast,
-  city: string,
-  countryCode: string,
-) {
+const mapForecastData = (forecast: api.DayForecast, city: string, countryCode: string) => {
   const condition = api.getWeatherCondition(forecast);
   return {
-    isClear: condition == api.WeatherCondition.Clear ||
-      condition == api.WeatherCondition.Clouds,
+    isClear: condition == api.WeatherCondition.Clear || condition == api.WeatherCondition.Clouds,
     location: `${city} (${countryCode})`,
     description: forecast.weather[0].description,
     minimumTemperature: forecast.temp.min,
@@ -77,4 +55,4 @@ function mapForecastData(
     windSpeed: forecast.speed,
     dateUnixTimestamp: forecast.dt,
   };
-}
+};
