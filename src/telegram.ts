@@ -82,19 +82,16 @@ export function response(chatId: string, text: string): TelegramResponseBody {
 }
 
 export async function answerCallbackQuery({ callback_query: query }: TelegramRequestBody, message: string) {
-  const req = await fetch(
-    `https://api.telegram.org/bot${botToken}/answerCallbackQuery`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        callback_query_id: query!.id,
-        text: message,
-      }),
+  const req = await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      callback_query_id: query!.id,
+      text: message,
+    }),
+  });
 
   if (!req.ok) {
     throw new Error(`failed to answer callback_query: status=${req.status}`);
