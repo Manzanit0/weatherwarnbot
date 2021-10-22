@@ -26,7 +26,7 @@ export async function handleCallback(ctx: RouterContext<RouteParams, ContextStat
   if (data === "location") {
     await bookmarkLocation(ctx);
     await answerCallbackQuery(json, "Location bookmarked!");
-  } else if (data.includes("forecast:now")) {
+  } else if (data.includes("forecast:")) {
     const locationId = data.split(":")[2];
     if (!locationId) {
       throw new Error("Unable to extract location name from callback_query");
@@ -38,9 +38,11 @@ export async function handleCallback(ctx: RouterContext<RouteParams, ContextStat
       throw new Error("received forecast:now callback for a location that doesn't exist");
     }
 
+    const forecastDay = data.includes("forecast:tomorrow") ? Day.TOMORROW : Day.TODAY;
     const forecast = await fetchWeatherByCoordinates(
       location.coordinates.latitude,
       location.coordinates.longitude,
+      forecastDay,
     );
 
     await answerCallbackQuery(json, `Fetching weather for ${location.name || "location"}`);
