@@ -134,14 +134,14 @@ export function withInlineMenu(res: TelegramResponseBody): TelegramResponseBody 
 export function withForecastRequestInlineMenu(
   res: TelegramResponseBody,
   command: TelegramWeatherRequestCommand,
-  locations: string[],
+  locations: [string, string][],
 ): TelegramResponseBody {
   return {
     ...res,
     reply_markup: {
       inline_keyboard: locations.map((
         x,
-      ) => ([{ text: x, callback_data: `forecast:${command}:${x}` }])),
+      ) => ([{ text: x[1], callback_data: `forecast:${command}:${x[0]}` }])),
     },
   };
 }

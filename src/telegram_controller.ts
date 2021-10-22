@@ -1,7 +1,7 @@
 import { RouteParams, RouterContext } from "https://deno.land/x/oak@v9.0.0/router.ts";
 import { buildForecastMessage, Day, fetchWeatherByCoordinates, fetchWeatherByName } from "./forecast.ts";
 import { ContextState } from "./middleware.ts";
-import { createUserLocation, findLocationByNameAndUser, listLocations } from "./repository.ts";
+import { createUserLocation, findLocationById, findLocationByNameAndUser, listLocations } from "./repository.ts";
 import {
   answerCallbackQuery,
   parseCommand,
@@ -27,13 +27,13 @@ export async function handleCallback(ctx: RouterContext<RouteParams, ContextStat
     await bookmarkLocation(ctx);
     await answerCallbackQuery(json, "Location bookmarked!");
   } else if (data.includes("forecast:now")) {
-    const name = data.split(":")[2];
-    if (!name) {
+    const locationId = data.split(":")[2];
+    if (!locationId) {
       throw new Error("Unable to extract location name from callback_query");
     }
 
     // To receive this kind of payload, the location must have been bookmarked.
-    const location = await findLocationByNameAndUser(name, ctx.state.user!.id);
+    const location = await findLocationById(locationId);
     if (!location) {
       throw new Error("received forecast:now callback for a location that doesn't exist");
     }
@@ -43,8 +43,8 @@ export async function handleCallback(ctx: RouterContext<RouteParams, ContextStat
       location.coordinates.longitude,
     );
 
-    await answerCallbackQuery(json, `Fetching weather for ${name}`);
-    const message = buildForecastMessage({ ...forecast, location: name });
+    await answerCallbackQuery(json, `Fetching weather for ${location.name || "location"}`);
+    const message = buildForecastMessage({ ...forecast, location: location.name! });
     sendMessage(ctx.state.user!.telegram_chat_id, message);
     return;
   } else {
@@ -84,14 +84,13 @@ export async function handleCommand(ctx: RouterContext<RouteParams, ContextState
     .replace("/", "");
 
   if (lowerCaseText === "now" || lowerCaseText === "tomorrow") {
-    const locationNames = (await listLocations(ctx.state.user!.id)).map(
-      (x) => x.name!,
-    );
+    const locationTuples = (await listLocations(ctx.state.user!.id))
+      .map((x) => [x.id, x.name!] as [string, string]);
 
     return withForecastRequestInlineMenu(
       response(chatId, "Which location do you want to check the weather for?"),
       lowerCaseText,
-      locationNames,
+      locationTuples,
     );
   }
 
