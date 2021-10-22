@@ -1,19 +1,7 @@
-import {
-  RouteParams,
-  RouterContext,
-} from "https://deno.land/x/oak@v9.0.0/router.ts";
-import {
-  buildForecastMessage,
-  Day,
-  fetchWeatherByCoordinates,
-  fetchWeatherByName,
-} from "./forecast.ts";
+import { RouteParams, RouterContext } from "https://deno.land/x/oak@v9.0.0/router.ts";
+import { buildForecastMessage, Day, fetchWeatherByCoordinates, fetchWeatherByName } from "./forecast.ts";
 import { ContextState } from "./middleware.ts";
-import {
-  createUserLocation,
-  findUserLocation,
-  listUserLocations,
-} from "./repository.ts";
+import { createUserLocation, findLocationByNameAndUser, listLocations } from "./repository.ts";
 import {
   answerCallbackQuery,
   parseCommand,
@@ -28,9 +16,7 @@ import {
 // - forecast:tomorrow:<location>
 // - location:new:<location>
 // Where <location> is the location name.
-export async function handleCallback(
-  ctx: RouterContext<RouteParams, ContextState>,
-) {
+export async function handleCallback(ctx: RouterContext<RouteParams, ContextState>) {
   const json = ctx.state.payload!;
   const data = json.callback_query?.data;
   if (!data) {
@@ -47,11 +33,9 @@ export async function handleCallback(
     }
 
     // To receive this kind of payload, the location must have been bookmarked.
-    const location = await findUserLocation(name, ctx.state.user!.id);
+    const location = await findLocationByNameAndUser(name, ctx.state.user!.id);
     if (!location) {
-      throw new Error(
-        "received forecast:now callback for a location that doesn't exist",
-      );
+      throw new Error("received forecast:now callback for a location that doesn't exist");
     }
 
     const forecast = await fetchWeatherByCoordinates(
@@ -69,9 +53,7 @@ export async function handleCallback(
   }
 }
 
-export async function handleLocation(
-  ctx: RouterContext<RouteParams, ContextState>,
-) {
+export async function handleLocation(ctx: RouterContext<RouteParams, ContextState>) {
   const json = ctx.state.payload!;
   if (!json.message || !json.message.location) {
     throw new Error("telegram payload missing location");
@@ -87,9 +69,7 @@ export async function handleLocation(
   return response(chatId, message);
 }
 
-export async function handleCommand(
-  ctx: RouterContext<RouteParams, ContextState>,
-) {
+export async function handleCommand(ctx: RouterContext<RouteParams, ContextState>) {
   const json = ctx.state.payload!;
   if (!json.message!.text) {
     throw new Error("telegram payload missing text");
@@ -104,7 +84,7 @@ export async function handleCommand(
     .replace("/", "");
 
   if (lowerCaseText === "now" || lowerCaseText === "tomorrow") {
-    const locationNames = (await listUserLocations(ctx.state.user!.id)).map(
+    const locationNames = (await listLocations(ctx.state.user!.id)).map(
       (x) => x.name!,
     );
 
@@ -179,8 +159,7 @@ export function handleUnknownPayload(
 // FIXME: Temporary hack which assumes specific message.
 // \ud83d\udea9 Torrejon de la calzada (ES)\n    - - - - -
 // Ideally the callback data would contain the location name.
-const extractLocationNameFromMessage = (msg: string) =>
-  msg.split("(").shift()?.split(" ")?.slice(1)?.join(" ")?.trim();
+const extractLocationNameFromMessage = (msg: string) => msg.split("(").shift()?.split(" ")?.slice(1)?.join(" ")?.trim();
 
 async function bookmarkLocation(ctx: RouterContext<RouteParams, ContextState>) {
   const json = ctx.state.payload!;
@@ -197,7 +176,7 @@ async function bookmarkLocation(ctx: RouterContext<RouteParams, ContextState>) {
     );
   }
 
-  const location = await findUserLocation(name, ctx.state.user!.id);
+  const location = await findLocationByNameAndUser(name, ctx.state.user!.id);
   if (location) {
     await answerCallbackQuery(json, "Location already bookmarked!");
     return;

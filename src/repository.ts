@@ -56,12 +56,16 @@ export const createUserLocation = (params: CreateLocationParams) => {
   return runQuery<DbUserLocation>(query).then(unwrapOneLocation);
 };
 
-export const findUserLocation = (name: string, userId: string) =>
+export const findLocationByNameAndUser = (name: string, userId: string) =>
   runQuery<DbUserLocation>(
     `SELECT id, user_id, name, coordinates FROM user_locations WHERE LOWER(name) = LOWER('${name}') AND user_id = '${userId}'`,
   ).then(unwrapMaybeOneLocation);
 
-export const listUserLocations = (userId: string) =>
+export const findLocationById = (id: string) =>
+  runQuery<DbUserLocation>(`SELECT id, user_id, name, coordinates FROM user_locations WHERE id = '${id}'`)
+    .then(unwrapMaybeOneLocation);
+
+export const listLocations = (userId: string) =>
   runQuery<DbUserLocation>(`SELECT id, user_id, name, coordinates FROM user_locations WHERE user_id = '${userId}'`)
     .then(unwrapLocations);
 
