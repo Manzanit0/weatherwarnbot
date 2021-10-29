@@ -1,10 +1,5 @@
 import { Context } from "https://deno.land/x/oak@v9.0.0/context.ts";
-import {
-  isHttpError,
-  RouteParams,
-  RouterContext,
-  Status,
-} from "https://deno.land/x/oak@v9.0.0/mod.ts";
+import { isHttpError, RouteParams, RouterContext, Status } from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import { Logger } from "./logger.ts";
 import { GeolocationClient } from "./positionstack.ts";
 import { createUser, findUser, User } from "./repository.ts";
@@ -106,4 +101,28 @@ export async function handleErrors(ctx: OakContext, next: NxtFn) {
       ctx.response.body = { error: `${err}` };
     }
   }
+}
+
+export type AuthenticatedContext = {
+  geolocationClient: GeolocationClient;
+  logger: Logger;
+  user: User;
+  payload: TelegramRequestBody;
+};
+
+export function authenticatedContext(ctx: ContextState): AuthenticatedContext {
+  if (!ctx.user) {
+    throw new Error("no user provided when building authenticated ctx");
+  }
+
+  if (!ctx.payload) {
+    throw new Error("no payload provided when building authenticated ctx");
+  }
+
+  return {
+    logger: ctx.logger,
+    geolocationClient: ctx.geolocationClient,
+    user: ctx.user,
+    payload: ctx.payload,
+  };
 }

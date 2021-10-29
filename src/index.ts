@@ -1,10 +1,7 @@
-import {
-  Application,
-  RouteParams,
-  Router,
-} from "https://deno.land/x/oak@v9.0.0/mod.ts";
+import { Application, RouteParams, Router } from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import { getLogger } from "./logger.ts";
 import {
+  authenticatedContext,
   ContextState,
   handleErrors,
   logRequest,
@@ -13,12 +10,7 @@ import {
   trackUser,
 } from "./middleware.ts";
 import { PositionStackClient } from "./positionstack.ts";
-import {
-  handleCallback,
-  handleCommand,
-  handleLocation,
-  handleUnknownPayload,
-} from "./telegram_controller.ts";
+import { handleCallback, handleCommand, handleLocation, handleUnknownPayload } from "./telegram_controller.ts";
 
 const generalRouter = new Router<RouteParams, ContextState>();
 generalRouter.get("/", (ctx) => {
@@ -31,19 +23,19 @@ telegramRouter.use(parseTelegramWebhookBody);
 telegramRouter.use(trackUser);
 
 telegramRouter.post("/", async (ctx) => {
-  // We can assert the payload is here because the middleware does so, or throws.
-  const json = ctx.state.payload!;
+  const authCtx = authenticatedContext(ctx.state);
+  const json = authCtx.payload;
 
   if (json.message) {
     if (json.message.location) {
-      ctx.response.body = await handleLocation(ctx);
+      ctx.response.body = await handleLocation(authCtx);
     } else if (json.message.text) {
-      ctx.response.body = await handleCommand(ctx);
+      ctx.response.body = await handleCommand(authCtx);
     } else {
-      ctx.response.body = handleUnknownPayload(ctx);
+      ctx.response.body = handleUnknownPayload(authCtx);
     }
   } else if (json.callback_query) {
-    await handleCallback(ctx);
+    await handleCallback(authCtx);
     ctx.response.body = "";
   }
 });

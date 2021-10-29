@@ -1,6 +1,5 @@
-import { RouteParams, RouterContext } from "https://deno.land/x/oak@v9.0.0/router.ts";
 import { buildForecastMessage, Day, fetchWeatherByCoordinates, fetchWeatherByName } from "./forecast.ts";
-import { ContextState } from "./middleware.ts";
+import { AuthenticatedContext } from "./middleware.ts";
 import { createUserLocation, findLocationById, findLocationByNameAndUser, listLocations } from "./repository.ts";
 import {
   answerCallbackQuery,
@@ -16,16 +15,15 @@ import {
 // - forecast:tomorrow:<location>
 // - location:new:<location>
 // Where <location> is the location name.
-export async function handleCallback(ctx: RouterContext<RouteParams, ContextState>) {
-  const json = ctx.state.payload!;
-  const data = json.callback_query?.data;
+export async function handleCallback(ctx: AuthenticatedContext) {
+  const data = ctx.payload.callback_query?.data;
   if (!data) {
     throw new Error("telegram payload missing callback_query");
   }
 
   if (data === "location") {
     await bookmarkLocation(ctx);
-    await answerCallbackQuery(json, "Location bookmarked!");
+    await answerCallbackQuery(ctx.payload, "Location bookmarked!");
   } else if (data.includes("forecast:")) {
     const locationId = data.split(":")[2];
     if (!locationId) {
@@ -45,18 +43,18 @@ export async function handleCallback(ctx: RouterContext<RouteParams, ContextStat
       forecastDay,
     );
 
-    await answerCallbackQuery(json, `Fetching weather for ${location.name || "location"}`);
+    await answerCallbackQuery(ctx.payload, `Fetching weather for ${location.name || "location"}`);
     const message = buildForecastMessage({ ...forecast, location: location.name! });
-    sendMessage(ctx.state.user!.telegram_chat_id, message);
+    sendMessage(ctx.user.telegram_chat_id, message);
     return;
   } else {
-    await answerCallbackQuery(json, `received ${data} callback`);
+    await answerCallbackQuery(ctx.payload, `received ${data} callback`);
     return;
   }
 }
 
-export async function handleLocation(ctx: RouterContext<RouteParams, ContextState>) {
-  const json = ctx.state.payload!;
+export async function handleLocation(ctx: AuthenticatedContext) {
+  const json = ctx.payload;
   if (!json.message || !json.message.location) {
     throw new Error("telegram payload missing location");
   }
@@ -67,17 +65,17 @@ export async function handleLocation(ctx: RouterContext<RouteParams, ContextStat
   );
 
   const message = buildForecastMessage(forecast);
-  const chatId = ctx.state.user!.telegram_chat_id;
+  const chatId = ctx.user.telegram_chat_id;
   return response(chatId, message);
 }
 
-export async function handleCommand(ctx: RouterContext<RouteParams, ContextState>) {
-  const json = ctx.state.payload!;
+export async function handleCommand(ctx: AuthenticatedContext) {
+  const json = ctx.payload;
   if (!json.message!.text) {
     throw new Error("telegram payload missing text");
   }
 
-  const chatId = ctx.state.user!.telegram_chat_id;
+  const chatId = ctx.user.telegram_chat_id;
 
   // Shortlist empty command.
   const lowerCaseText = json.message!.text
@@ -86,7 +84,7 @@ export async function handleCommand(ctx: RouterContext<RouteParams, ContextState
     .replace("/", "");
 
   if (lowerCaseText === "now" || lowerCaseText === "tomorrow") {
-    const locationTuples = (await listLocations(ctx.state.user!.id))
+    const locationTuples = (await listLocations(ctx.user.id))
       .map((x) => [x.id, x.name!] as [string, string]);
 
     return withForecastRequestInlineMenu(
@@ -120,14 +118,14 @@ export async function handleCommand(ctx: RouterContext<RouteParams, ContextState
         `,
     );
   } else if (c.command == "now") {
-    ctx.state.logger.info(
+    ctx.logger.info(
       `getting todays's forecast for ${c.city} (${c.country})`,
     );
     const forecast = await fetchWeatherByName(c.city!, c.country!, Day.TODAY);
     const message = buildForecastMessage(forecast);
     return withInlineMenu(response(chatId, message));
   } else if (c.command == "tomorrow") {
-    ctx.state.logger.info(
+    ctx.logger.info(
       `getting todays's forecast for ${c.city} (${c.country})`,
     );
     const forecast = await fetchWeatherByName(
@@ -147,10 +145,8 @@ export async function handleCommand(ctx: RouterContext<RouteParams, ContextState
   }
 }
 
-export function handleUnknownPayload(
-  ctx: RouterContext<RouteParams, ContextState>,
-) {
-  const chatId = ctx.state.user!.telegram_chat_id;
+export function handleUnknownPayload(ctx: AuthenticatedContext) {
+  const chatId = ctx.user.telegram_chat_id;
   return response(
     chatId,
     "What the hell did you just send me? STFU...",
@@ -162,8 +158,8 @@ export function handleUnknownPayload(
 // Ideally the callback data would contain the location name.
 const extractLocationNameFromMessage = (msg: string) => msg.split("(").shift()?.split(" ")?.slice(1)?.join(" ")?.trim();
 
-async function bookmarkLocation(ctx: RouterContext<RouteParams, ContextState>) {
-  const json = ctx.state.payload!;
+async function bookmarkLocation(ctx: AuthenticatedContext) {
+  const json = ctx.payload;
 
   const message = json?.callback_query?.message?.text;
   if (!message) {
@@ -177,26 +173,26 @@ async function bookmarkLocation(ctx: RouterContext<RouteParams, ContextState>) {
     );
   }
 
-  const location = await findLocationByNameAndUser(name, ctx.state.user!.id);
+  const location = await findLocationByNameAndUser(name, ctx.user.id);
   if (location) {
     await answerCallbackQuery(json, "Location already bookmarked!");
     return;
   }
 
-  const geolocation = await ctx.state.geolocationClient.findLocation(name);
+  const geolocation = await ctx.geolocationClient.findLocation(name);
   if (!geolocation) {
     await answerCallbackQuery(json, "Unable to geolocate location by name");
     return;
   }
 
-  ctx.state.logger.info(
+  ctx.logger.info(
     `found location ${geolocation.name} through PositionStack`,
   );
 
-  ctx.state.logger.debug(`location=${JSON.stringify(geolocation)}`);
+  ctx.logger.debug(`location=${JSON.stringify(geolocation)}`);
 
   return createUserLocation({
-    user_id: ctx.state.user!.id,
+    user_id: ctx.user.id,
     name: geolocation.name,
     coordinates: {
       latitude: geolocation.latitude,
