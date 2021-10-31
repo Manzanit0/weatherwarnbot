@@ -1,6 +1,6 @@
 // deno-lint-ignore-file camelcase
 import * as R from "https://raw.githubusercontent.com/selfrefactor/rambda/master/dist/rambda.esm.js";
-import { runQuery, unwrapMany, unwrapOne } from "./database.ts";
+import { runQuery, unwrapAffectedRecordCount, unwrapMany, unwrapOne } from "./database.ts";
 
 // User Repository
 
@@ -68,6 +68,10 @@ export const findLocationById = (id: string) =>
 export const listLocations = (userId: string) =>
   runQuery<DbUserLocation>(`SELECT id, user_id, name, coordinates FROM user_locations WHERE user_id = '${userId}'`)
     .then(unwrapLocations);
+
+export const deleteLocationById = (id: string) =>
+  runQuery<DbUserLocation>(`DELETE FROM user_locations WHERE id = '${id}'`)
+    .then(unwrapAffectedRecordCount);
 
 const decodeCoordinates = (coordinates: string) => {
   const result = coordinates.match(

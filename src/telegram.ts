@@ -49,17 +49,19 @@ type InlineKeyBoard = InlineKeyBoardElement[][];
 
 type KeyBoard = string[][];
 
+type ReplyMarkup = {
+  inline_keyboard?: InlineKeyBoard;
+  // Fields for custom keyboards
+  one_time_keyboard?: boolean;
+  keyboard?: KeyBoard;
+};
+
 export type TelegramResponseBody = {
   method: TelegramAPIMethod;
   chat_id: string;
   text: string;
   parse_mode: TelegramParseMode;
-  reply_markup?: {
-    inline_keyboard?: InlineKeyBoard;
-    // Fields for custom keyboards
-    one_time_keyboard?: boolean;
-    keyboard?: KeyBoard;
-  };
+  reply_markup?: ReplyMarkup;
 };
 
 export function getChatId(body: TelegramRequestBody) {
@@ -98,6 +100,40 @@ export async function answerCallbackQuery({ callback_query: query }: TelegramReq
   }
 }
 
+type MessagePayload = {
+  chat_id: string;
+  text: string;
+  reply_markup?: ReplyMarkup;
+};
+
+export async function sendComplexMessage(payload: MessagePayload) {
+  const req = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!req.ok) {
+    throw new Error(`failed to to sendMessage: status=${req.status}`);
+  }
+}
+
+export async function updateMessage(messageId: string, payload: MessagePayload) {
+  const req = await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ ...payload, message_id: messageId }),
+  });
+
+  if (!req.ok) {
+    throw new Error(`failed to to sendMessage: status=${req.status}`);
+  }
+}
+
 export async function sendMessage(chatId: string, message: string) {
   const req = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: "POST",
@@ -131,6 +167,32 @@ export function withInlineMenu(res: TelegramResponseBody): TelegramResponseBody 
   };
 }
 
+export function withSettingsInlineMenu(res: TelegramResponseBody): TelegramResponseBody {
+  return {
+    ...res,
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: "📌 Saved locations",
+            callback_data: "settings:locations",
+          },
+          {
+            text: "📬 Notifications",
+            callback_data: "settings:notifications",
+          },
+        ],
+        [
+          {
+            text: "❌ Delete my data",
+            callback_data: "settings:delete",
+          },
+        ],
+      ],
+    },
+  };
+}
+
 export function withForecastRequestInlineMenu(
   res: TelegramResponseBody,
   command: TelegramWeatherRequestCommand,
@@ -142,6 +204,49 @@ export function withForecastRequestInlineMenu(
       inline_keyboard: locations.map((
         x,
       ) => ([{ text: x[1], callback_data: `forecast:${command}:${x[0]}` }])),
+    },
+  };
+}
+
+export function withLocationsSettingsKeyboard(
+  res: TelegramResponseBody,
+  locations: [string, string][],
+): TelegramResponseBody {
+  return {
+    ...res,
+    reply_markup: {
+      one_time_keyboard: true,
+      inline_keyboard: locations.map((x) => ([{ text: x[1], callback_data: x[0] }])),
+    },
+  };
+}
+
+export function withBackToSettingsInlineButton(res: TelegramResponseBody): TelegramResponseBody {
+  if (!res.reply_markup?.inline_keyboard) {
+    res.reply_markup = {
+      one_time_keyboard: true,
+      inline_keyboard: [],
+    };
+  }
+
+  return {
+    ...res,
+    reply_markup: {
+      ...res.reply_markup,
+      inline_keyboard: res.reply_markup?.inline_keyboard?.concat([[{
+        text: "« Back to Settings",
+        callback_data: "settings:back",
+      }]]),
+    },
+  };
+}
+
+export function withInlineKeyboard(res: TelegramResponseBody, keyboard: InlineKeyBoard): TelegramResponseBody {
+  return {
+    ...res,
+    reply_markup: {
+      ...res.reply_markup,
+      inline_keyboard: keyboard,
     },
   };
 }
@@ -159,7 +264,7 @@ export function withLocationsKeyboard(res: TelegramResponseBody, locations: stri
 type TelegramWeatherRequestCommand = "now" | "tomorrow";
 
 type TelegramCommand = {
-  command: TelegramWeatherRequestCommand | "help";
+  command: TelegramWeatherRequestCommand | "help" | "settings";
   city?: string;
   country?: string;
 };
@@ -169,6 +274,11 @@ export function parseCommand(command: string): TelegramCommand {
     return { command: "help" };
   }
 
+  if (command.includes("/settings")) {
+    return { command: "settings" };
+  }
+
+  // TODO: enable group commands: /now@weatherwarnbot madrid,es
   const regex = /\/(?<command>\w+) (?<city>.+),\s*(?<country>[a-zA-Z0-9_-]+)/;
   const match = command.match(regex);
 

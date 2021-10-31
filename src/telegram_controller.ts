@@ -1,6 +1,7 @@
 import { buildForecastMessage, Day, fetchWeatherByCoordinates, fetchWeatherByName } from "./forecast.ts";
 import { AuthenticatedContext } from "./middleware.ts";
 import { createUserLocation, findLocationById, findLocationByNameAndUser, listLocations } from "./repository.ts";
+import { handleSettingsCallback } from "./settings.ts";
 import {
   answerCallbackQuery,
   parseCommand,
@@ -8,6 +9,7 @@ import {
   sendMessage,
   withForecastRequestInlineMenu,
   withInlineMenu,
+  withSettingsInlineMenu,
 } from "./telegram.ts";
 
 // handleCallback handles (or will handle at some point ;-)) the following series of callback data:
@@ -46,6 +48,9 @@ export async function handleCallback(ctx: AuthenticatedContext) {
     await answerCallbackQuery(ctx.payload, `Fetching weather for ${location.name || "location"}`);
     const message = buildForecastMessage({ ...forecast, location: location.name! });
     sendMessage(ctx.user.telegram_chat_id, message);
+    return;
+  } else if (data.includes("settings:")) {
+    await handleSettingsCallback(ctx);
     return;
   } else {
     await answerCallbackQuery(ctx.payload, `received ${data} callback`);
@@ -96,7 +101,9 @@ export async function handleCommand(ctx: AuthenticatedContext) {
 
   const c = parseCommand(json.message!.text);
 
-  if (c.command == "help") {
+  if (c.command === "settings") {
+    return withSettingsInlineMenu(response(chatId, "What do you want to check?"));
+  } else if (c.command == "help") {
     return response(
       chatId,
       `

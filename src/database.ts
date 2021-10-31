@@ -43,3 +43,7 @@ export function unwrapRaw<T>(r: QueryObjectResult<T>): T[] {
 
   return r.rows;
 }
+
+export function unwrapAffectedRecordCount<T>(r: QueryObjectResult<T>): number {
+  return r.rowCount ?? -1;
+}
