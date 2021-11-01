@@ -1,4 +1,3 @@
-import { CallbackUsecase } from "./callbacks/callbackUsecase.ts";
 import bookmarkLocationUsecase from "./callbacks/bookmarkLocation.ts";
 import settingsUsecase from "./callbacks/settings.ts";
 import forecastUsecase from "./callbacks/forecast.ts";
@@ -14,6 +13,7 @@ import {
   withLocationInlineMenu,
   withSettingsInlineMenu,
 } from "./telegram.ts";
+import { findValid } from "./callbacks/callbackUsecase.ts";
 
 export async function handleCallback(ctx: AuthenticatedContext) {
   const data = ctx.payload.callback_query?.data;
@@ -21,13 +21,13 @@ export async function handleCallback(ctx: AuthenticatedContext) {
     throw new Error("telegram payload missing callback_query");
   }
 
-  const usecases: CallbackUsecase[] = [
+  const usecases = [
     bookmarkLocationUsecase,
     settingsUsecase,
     forecastUsecase,
   ];
 
-  const usecase = usecases.find((x) => x.isValid(ctx.payload));
+  const usecase = findValid(usecases, ctx.payload);
   if (usecase) {
     await usecase.handle(ctx);
   } else {
