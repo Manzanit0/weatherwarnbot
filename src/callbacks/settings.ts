@@ -17,11 +17,11 @@ const callbackDataKey = "settings:";
 const isSettingsCallback = (body: TelegramRequestBody) => body.callback_query?.data.includes(callbackDataKey) ?? false;
 
 const handleSettingsCallback = async (ctx: AuthenticatedContext) => {
-  if (!ctx.payload.callback_query) {
-    throw new Error("no callback_query");
+  if (!isSettingsCallback(ctx.payload)) {
+    throw new Error("is not settings payload");
   }
 
-  const callbackData = ctx.payload.callback_query?.data;
+  const callbackData = ctx.payload.callback_query!.data;
   switch (callbackData) {
     // Go back to initial settings screen.
     case "settings:back": {
