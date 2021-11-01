@@ -11,10 +11,10 @@ import {
 
 const callbackDataKey = "location:bookmark";
 
-export const isBookmarkLocationCallback = (body: TelegramRequestBody) =>
-  body.callback_query?.data.includes(callbackDataKey);
+const isBookmarkLocationCallback = (body: TelegramRequestBody) =>
+  body.callback_query?.data.includes(callbackDataKey) ?? false;
 
-export async function handleBookmarkLocationCallback(ctx: AuthenticatedContext) {
+async function handleBookmarkLocationCallback(ctx: AuthenticatedContext) {
   if (!isBookmarkLocationCallback(ctx.payload)) {
     throw new Error("is not bookmark location payload");
   }
@@ -55,3 +55,9 @@ export async function handleBookmarkLocationCallback(ctx: AuthenticatedContext) 
   await updateMessage(originalMessageId, payload);
   await answerCallbackQuery(ctx.payload, "Location bookmarked!");
 }
+
+// complies with CallbackUsecase interface
+export default {
+  handle: handleBookmarkLocationCallback,
+  isValid: isBookmarkLocationCallback,
+};

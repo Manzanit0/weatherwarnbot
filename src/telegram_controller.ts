@@ -1,8 +1,10 @@
-import { handleBookmarkLocationCallback, isBookmarkLocationCallback } from "./callbacks/bookmarkLocation.ts";
+import { CallbackUsecase } from "./callbacks/callbackUsecase.ts";
+import bookmarkLocationUsecase from "./callbacks/bookmarkLocation.ts";
+import settingsUsecase from "./callbacks/settings.ts";
+
 import { buildForecastMessage, Day, fetchWeatherByCoordinates, fetchWeatherByName } from "./forecast.ts";
 import { AuthenticatedContext } from "./middleware.ts";
 import { findLocationById, listLocations } from "./repository.ts";
-import { handleSettingsCallback } from "./settings.ts";
 import {
   answerCallbackQuery,
   parseCommand,
@@ -13,20 +15,20 @@ import {
   withSettingsInlineMenu,
 } from "./telegram.ts";
 
-// handleCallback handles (or will handle at some point ;-)) the following series of callback data:
-// - forecast:new:<location>
-// - forecast:tomorrow:<location>
-// - location:new:<location>
-// Where <location> is the location name.
+const usecases: CallbackUsecase[] = [
+  bookmarkLocationUsecase,
+  settingsUsecase,
+];
+
 export async function handleCallback(ctx: AuthenticatedContext) {
   const data = ctx.payload.callback_query?.data;
   if (!data) {
     throw new Error("telegram payload missing callback_query");
   }
 
-  if (isBookmarkLocationCallback(ctx.payload)) {
-    await handleBookmarkLocationCallback(ctx);
-  } else if (data.includes("forecast:")) {
+  usecases.forEach((x) => x.isValid(ctx.payload) ? x.handle(ctx) : null);
+
+  if (data.includes("forecast:")) {
     const locationId = data.split(":")[2];
     if (!locationId) {
       throw new Error("Unable to extract location name from callback_query");
@@ -48,8 +50,6 @@ export async function handleCallback(ctx: AuthenticatedContext) {
     await answerCallbackQuery(ctx.payload, `Fetching weather for ${location.name || "location"}`);
     const message = buildForecastMessage({ ...forecast, location: location.name! });
     sendMessage(ctx.user.telegram_chat_id, message);
-  } else if (data.includes("settings:")) {
-    await handleSettingsCallback(ctx);
   } else {
     await answerCallbackQuery(ctx.payload, `received ${data} callback`);
   }

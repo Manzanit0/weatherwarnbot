@@ -1,17 +1,22 @@
-import { AuthenticatedContext } from "./middleware.ts";
-import { deleteLocationById, findLocationById, listLocations } from "./repository.ts";
+import { AuthenticatedContext } from "../middleware.ts";
+import { deleteLocationById, findLocationById, listLocations } from "../repository.ts";
 import {
   answerCallbackQuery,
   response,
   sendMessage,
+  TelegramRequestBody,
   updateMessage,
   withBackToSettingsInlineButton,
   withInlineKeyboard,
   withLocationsSettingsKeyboard,
   withSettingsInlineMenu,
-} from "./telegram.ts";
+} from "../telegram.ts";
 
-export const handleSettingsCallback = async (ctx: AuthenticatedContext) => {
+const callbackDataKey = "settings:";
+
+const isSettingsCallback = (body: TelegramRequestBody) => body.callback_query?.data.includes(callbackDataKey) ?? false;
+
+const handleSettingsCallback = async (ctx: AuthenticatedContext) => {
   if (!ctx.payload.callback_query) {
     throw new Error("no callback_query");
   }
@@ -63,8 +68,19 @@ const handleDeleteDataCallback = async (ctx: AuthenticatedContext) => {
 };
 
 const handleNotificationSettingsCallback = async (ctx: AuthenticatedContext) => {
-  await sendMessage(ctx.user.telegram_chat_id, "We're working on being able to enable weather notifications.");
-  await answerCallbackQuery(ctx.payload, "Request processed!");
+  const originalMessageId = ctx.payload.callback_query!.message.message_id;
+  const payload = withBackToSettingsInlineButton(
+    withInlineKeyboard(
+      response(ctx.user.telegram_chat_id, "Here are your notification settings:"),
+      [[
+        { text: "🎚 Turn off", callback_data: "settings:notifications:off" },
+        { text: "⏰ Set time", callback_data: "settings:notifications:set_time" },
+      ]],
+    ),
+  );
+
+  await updateMessage(originalMessageId, payload);
+  await answerCallbackQuery(ctx.payload, "Succesfully listed locations!");
 };
 
 const handleListLocationsCallback = async (ctx: AuthenticatedContext) => {
@@ -122,4 +138,9 @@ const listLocationsPayload = async (ctx: AuthenticatedContext) => {
       locationTuples,
     ),
   );
+};
+
+export default {
+  handle: handleSettingsCallback,
+  isValid: isSettingsCallback,
 };
