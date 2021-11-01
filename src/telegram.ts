@@ -151,7 +151,7 @@ export async function sendMessage(chatId: string, message: string) {
   }
 }
 
-export function withInlineMenu(res: TelegramResponseBody): TelegramResponseBody {
+export function withLocationInlineMenu(res: TelegramResponseBody, locationName: string): TelegramResponseBody {
   return {
     ...res,
     reply_markup: {
@@ -159,7 +159,13 @@ export function withInlineMenu(res: TelegramResponseBody): TelegramResponseBody 
         [
           {
             text: "📌 Bookmark Location",
-            callback_data: "location",
+            callback_data: `location:bookmark:${locationName}`,
+          },
+        ],
+        [
+          {
+            text: "📬 Enable notifications",
+            callback_data: "location:enable_notification",
           },
         ],
       ],
