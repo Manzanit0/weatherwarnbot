@@ -1,16 +1,14 @@
+import { handleBookmarkLocationCallback, isBookmarkLocationCallback } from "./callbacks/bookmarkLocation.ts";
 import { buildForecastMessage, Day, fetchWeatherByCoordinates, fetchWeatherByName } from "./forecast.ts";
 import { AuthenticatedContext } from "./middleware.ts";
-import { createUserLocation, findLocationById, findLocationByNameAndUser, listLocations } from "./repository.ts";
+import { findLocationById, listLocations } from "./repository.ts";
 import { handleSettingsCallback } from "./settings.ts";
 import {
   answerCallbackQuery,
-  enableNotificationsInlineButton,
   parseCommand,
   response,
   sendMessage,
-  updateMessage,
   withForecastRequestInlineMenu,
-  withInlineKeyboard,
   withLocationInlineMenu,
   withSettingsInlineMenu,
 } from "./telegram.ts";
@@ -26,10 +24,8 @@ export async function handleCallback(ctx: AuthenticatedContext) {
     throw new Error("telegram payload missing callback_query");
   }
 
-  if (data.includes("location:bookmark")) {
-    const [_, location] = data.split("location:bookmark:");
-    const [city, _countryCode] = location.split(",");
-    await bookmarkLocation(ctx, city);
+  if (isBookmarkLocationCallback(ctx.payload)) {
+    await handleBookmarkLocationCallback(ctx);
   } else if (data.includes("forecast:")) {
     const locationId = data.split(":")[2];
     if (!locationId) {
@@ -52,13 +48,10 @@ export async function handleCallback(ctx: AuthenticatedContext) {
     await answerCallbackQuery(ctx.payload, `Fetching weather for ${location.name || "location"}`);
     const message = buildForecastMessage({ ...forecast, location: location.name! });
     sendMessage(ctx.user.telegram_chat_id, message);
-    return;
   } else if (data.includes("settings:")) {
     await handleSettingsCallback(ctx);
-    return;
   } else {
     await answerCallbackQuery(ctx.payload, `received ${data} callback`);
-    return;
   }
 }
 
@@ -160,39 +153,4 @@ export function handleUnknownPayload(ctx: AuthenticatedContext) {
     chatId,
     "What the hell did you just send me? STFU...",
   );
-}
-
-async function bookmarkLocation(ctx: AuthenticatedContext, cityName: string) {
-  const location = await findLocationByNameAndUser(cityName, ctx.user.id);
-  if (location) {
-    await answerCallbackQuery(ctx.payload, "Location already bookmarked!");
-    return;
-  }
-
-  const geolocation = await ctx.geolocationClient.findLocation(cityName);
-  if (!geolocation) {
-    await answerCallbackQuery(ctx.payload, "Unable to geolocate location by name");
-    return;
-  }
-
-  ctx.logger.info(`found location ${geolocation.name} through PositionStack`);
-
-  const _location = await createUserLocation({
-    user_id: ctx.user.id,
-    name: geolocation.name,
-    coordinates: {
-      latitude: geolocation.latitude,
-      longitude: geolocation.longitude,
-    },
-    positionstack: geolocation,
-  });
-
-  const originalMessageId = ctx.payload.callback_query!.message.message_id;
-  const originalMessageText = ctx.payload.callback_query!.message.text;
-  const payload = withInlineKeyboard(response(ctx.user.telegram_chat_id, originalMessageText), [[
-    enableNotificationsInlineButton,
-  ]]);
-
-  await updateMessage(originalMessageId, payload);
-  await answerCallbackQuery(ctx.payload, "Location bookmarked!");
 }
