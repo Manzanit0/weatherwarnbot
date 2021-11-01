@@ -157,21 +157,25 @@ export function withLocationInlineMenu(res: TelegramResponseBody, locationName: 
     reply_markup: {
       inline_keyboard: [
         [
-          {
-            text: "📌 Bookmark Location",
-            callback_data: `location:bookmark:${locationName}`,
-          },
+          bookmarkLocationInlineButton(locationName),
         ],
         [
-          {
-            text: "📬 Enable notifications",
-            callback_data: "location:enable_notification",
-          },
+          enableNotificationsInlineButton,
         ],
       ],
     },
   };
 }
+
+export const enableNotificationsInlineButton = {
+  text: "📬 Enable notifications",
+  callback_data: "location:enable_notification",
+};
+
+export const bookmarkLocationInlineButton = (locationName: string) => ({
+  text: "📌 Bookmark Location",
+  callback_data: `location:bookmark:${locationName}`,
+});
 
 export function withSettingsInlineMenu(res: TelegramResponseBody): TelegramResponseBody {
   return {

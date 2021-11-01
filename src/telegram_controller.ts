@@ -4,10 +4,13 @@ import { createUserLocation, findLocationById, findLocationByNameAndUser, listLo
 import { handleSettingsCallback } from "./settings.ts";
 import {
   answerCallbackQuery,
+  enableNotificationsInlineButton,
   parseCommand,
   response,
   sendMessage,
+  updateMessage,
   withForecastRequestInlineMenu,
+  withInlineKeyboard,
   withLocationInlineMenu,
   withSettingsInlineMenu,
 } from "./telegram.ts";
@@ -184,5 +187,12 @@ async function bookmarkLocation(ctx: AuthenticatedContext, cityName: string) {
     positionstack: geolocation,
   });
 
+  const originalMessageId = ctx.payload.callback_query!.message.message_id;
+  const originalMessageText = ctx.payload.callback_query!.message.text;
+  const payload = withInlineKeyboard(response(ctx.user.telegram_chat_id, originalMessageText), [[
+    enableNotificationsInlineButton,
+  ]]);
+
+  await updateMessage(originalMessageId, payload);
   await answerCallbackQuery(ctx.payload, "Location bookmarked!");
 }
