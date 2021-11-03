@@ -84,21 +84,24 @@ export async function handleCommand(ctx: AuthenticatedContext) {
     return response(
       chatId,
       `
-        Los siguientes comandos están disponibles para su uso:
+Los siguientes comandos están disponibles para su uso:
 
-        ✔️ /now London, GB
-        Devuelve el tiempo para la ciudad en estos momentos.
+✔️ /now London, GB
+Devuelve el tiempo para la ciudad en estos momentos.
 
-        ✔️ /tomorrow Madrid, ES
-        Devuelve el tiempo para la ciudad mañana.
+✔️ /tomorrow Madrid, ES
+Devuelve el tiempo para la ciudad mañana.
 
-        ✔️ /help
-        imprime esta ayuda.
+✔️ /settings
+Permite gestionar las localidades guardadas.
 
-        Recuerda que si me estás llamando dentro de un group, seguramente tengas
-        que usar el sufijo con mi nombre: /help@weatherwarnbot.
+✔️ /help
+imprime esta ayuda.
 
-        Tambien puedes probar a enviarme una localización.
+Recuerda que si me estás llamando dentro de un group, seguramente tengas
+que usar el sufijo con mi nombre: /help@weatherwarnbot.
+
+Tambien puedes probar a enviarme una localización.
         `,
     );
   } else if (c.command == "now") {
