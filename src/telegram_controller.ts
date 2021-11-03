@@ -2,7 +2,7 @@ import bookmarkLocationUsecase from "./callbacks/bookmarkLocation.ts";
 import settingsUsecase from "./callbacks/settings.ts";
 import forecastUsecase from "./callbacks/forecast.ts";
 
-import { buildForecastMessage, Day, fetchWeatherByCoordinates, fetchWeatherByName } from "./forecast.ts";
+import { buildForecastMessage, fetchWeatherByCoordinates } from "./forecast.ts";
 import { AuthenticatedContext } from "./middleware.ts";
 import { listLocations } from "./repository.ts";
 import {
@@ -14,6 +14,7 @@ import {
   withSettingsInlineMenu,
 } from "./telegram.ts";
 import { findValid } from "./callbacks/callbackUsecase.ts";
+import { newRetrospectiveForecastMessage } from "./retrospective.ts";
 
 export async function handleCallback(ctx: AuthenticatedContext) {
   const data = ctx.payload.callback_query?.data;
@@ -105,20 +106,28 @@ Tambien puedes probar a enviarme una localización.
         `,
     );
   } else if (c.command == "now") {
-    ctx.logger.info(`getting todays's forecast for ${c.city} (${c.country})`);
-    const forecast = await fetchWeatherByName(c.city!, c.country!, Day.TODAY);
-    const message = buildForecastMessage(forecast);
+    const geolocation = await ctx.geolocationClient.findLocation(c.city!);
+    if (!geolocation) {
+      throw new Error("Unable to geolocate town by name");
+    }
+
+    const message = await newRetrospectiveForecastMessage("today", {
+      coordinates: { latitude: geolocation.latitude, longitude: geolocation.longitude },
+      name: geolocation.name,
+    });
+
     return withLocationInlineMenu(response(chatId, message), `${c.city},${c.country}`);
   } else if (c.command == "tomorrow") {
-    ctx.logger.info(
-      `getting todays's forecast for ${c.city} (${c.country})`,
-    );
-    const forecast = await fetchWeatherByName(
-      c.city!,
-      c.country!,
-      Day.TOMORROW,
-    );
-    const message = buildForecastMessage(forecast);
+    const geolocation = await ctx.geolocationClient.findLocation(c.city!);
+    if (!geolocation) {
+      throw new Error("Unable to geolocate town by name");
+    }
+
+    const message = await newRetrospectiveForecastMessage("tomorrow", {
+      coordinates: { latitude: geolocation.latitude, longitude: geolocation.longitude },
+      name: geolocation.name,
+    });
+
     return withLocationInlineMenu(response(chatId, message), `${c.city},${c.country}`);
   } else {
     return response(
