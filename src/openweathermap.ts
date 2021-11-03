@@ -1,6 +1,14 @@
 import { getLogger } from "./logger.ts";
 
 const dl = await getLogger();
+
+interface WeatherDescription {
+  "id": number;
+  "main": string;
+  "description": string;
+  "icon": string;
+}
+
 export interface DailyForecastResponse {
   city: {
     id: number;
@@ -13,16 +21,11 @@ export interface DailyForecastResponse {
   cod: string;
   message: number;
   cnt: number;
-  list: Array<DayForecast>;
+  list: DayForecast[];
 }
 
 export interface DayForecast {
-  weather: Array<{
-    id: number;
-    main: string;
-    description: string;
-    icon: string;
-  }>;
+  weather: WeatherDescription[];
   temp: {
     day: number;
     night: number;
@@ -69,30 +72,43 @@ export interface HistoricalWeatherResponse {
   "lon": number;
   "timezone": string;
   "timezone_offset": number;
-  "current": {
-    "dt": number;
-    "sunrise": number;
-    "sunset": number;
-    "temp": number;
-    "feels_like": number;
-    "pressure": number;
-    "humidity": number;
-    "dew_point": number;
-    "uvi": number;
-    "clouds": number;
-    "visibility": number;
-    "wind_speed": number;
-    "wind_deg": number;
-    "wind_gust": number;
-    "weather": [
-      {
-        "id": number;
-        "main": string;
-        "description": string;
-        "icon": string;
-      },
-    ];
-  };
+  "current": HistoricalCurrentWeather;
+  "hourly": HistoricalHourlyWeather[];
+}
+
+interface HistoricalCurrentWeather {
+  "dt": number;
+  "sunrise": number;
+  "sunset": number;
+  "temp": number;
+  "feels_like": number;
+  "pressure": number;
+  "humidity": number;
+  "dew_point": number;
+  "uvi": number;
+  "clouds": number;
+  "visibility": number;
+  "wind_speed": number;
+  "wind_deg": number;
+  "wind_gust": number;
+  "weather": WeatherDescription[];
+}
+
+interface HistoricalHourlyWeather {
+  "dt": number;
+  "temp": number;
+  "feels_like": number;
+  "pressure": number;
+  "humidity": number;
+  "dew_point": number;
+  "uvi": number;
+  "clouds": number;
+  "visibility": number;
+  "wind_speed": number;
+  "wind_deg": number;
+  "wind_gust": number;
+  "weather": WeatherDescription[];
+  "rain": unknown;
 }
 
 export async function requestDailyForecastByCoordinate(coords: Coordinates) {
@@ -161,24 +177,29 @@ export async function requestYesterdaysForecast(coords: Coordinates) {
   return blob;
 }
 
+export function conditionFromForecast(forecast: DayForecast): WeatherCondition | undefined {
+  return codeToWeatherCondition(forecast.weather[0].id);
+}
+
+export function conditionFromHistoric(forecast: HistoricalWeatherResponse): WeatherCondition | undefined {
+  return codeToWeatherCondition(forecast.current.weather[0].id);
+}
+
 // https://openweathermap.org/weather-conditions
-export function getWeatherCondition(
-  forecast: DayForecast,
-): WeatherCondition | undefined {
-  const code = forecast.weather[0].id;
-  if (code >= 200 && code <= 299) {
+function codeToWeatherCondition(weatherCode: number): WeatherCondition | undefined {
+  if (weatherCode >= 200 && weatherCode <= 299) {
     return WeatherCondition.Thunderstorm;
-  } else if (code >= 300 && code <= 399) {
+  } else if (weatherCode >= 300 && weatherCode <= 399) {
     return WeatherCondition.Drizzle;
-  } else if (code >= 500 && code <= 599) {
+  } else if (weatherCode >= 500 && weatherCode <= 599) {
     return WeatherCondition.Rain;
-  } else if (code >= 600 && code <= 699) {
+  } else if (weatherCode >= 600 && weatherCode <= 699) {
     return WeatherCondition.Snow;
-  } else if (code >= 700 && code <= 799) {
+  } else if (weatherCode >= 700 && weatherCode <= 799) {
     return WeatherCondition.Atmosphere;
-  } else if (code == 800) {
+  } else if (weatherCode == 800) {
     return WeatherCondition.Clear;
-  } else if (code >= 801 && code <= 899) {
+  } else if (weatherCode >= 801 && weatherCode <= 899) {
     return WeatherCondition.Clouds;
   }
 }
