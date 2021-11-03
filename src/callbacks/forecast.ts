@@ -14,7 +14,7 @@ async function handleForecastCallback(ctx: AuthenticatedContext) {
 
   const data = ctx.payload.callback_query!.data;
 
-  const locationId = data.split(":")[2];
+  const [_prefix, when, locationId] = data.split(":");
   if (!locationId) {
     throw new Error("Unable to extract location name from callback_query");
   }
@@ -25,7 +25,7 @@ async function handleForecastCallback(ctx: AuthenticatedContext) {
     throw new Error("received forecast:now callback for a location that doesn't exist");
   }
 
-  const forecastDay = data.includes("forecast:tomorrow") ? Day.TOMORROW : Day.TODAY;
+  const forecastDay = when === "tomorrow" ? Day.TOMORROW : Day.TODAY;
   const forecast = await fetchWeatherByCoordinates(
     location.coordinates.latitude,
     location.coordinates.longitude,
