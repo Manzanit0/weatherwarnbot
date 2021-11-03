@@ -7,7 +7,7 @@ const callbackDataKey = "forecast:";
 
 const isForecastCallback = (body: TelegramRequestBody) => body.callback_query?.data.includes(callbackDataKey) ?? false;
 
-async function handleBookmarkLocationCallback(ctx: AuthenticatedContext) {
+async function handleForecastCallback(ctx: AuthenticatedContext) {
   if (!isForecastCallback(ctx.payload)) {
     throw new Error("no valid forecast callback");
   }
@@ -39,5 +39,5 @@ async function handleBookmarkLocationCallback(ctx: AuthenticatedContext) {
 
 export default {
   isValid: isForecastCallback,
-  handle: handleBookmarkLocationCallback,
+  handle: handleForecastCallback,
 };
