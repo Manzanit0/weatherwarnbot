@@ -60,24 +60,18 @@ export async function handleCommand(ctx: AuthenticatedContext) {
 
   const chatId = ctx.user.telegram_chat_id;
 
-  // Shortlist empty command.
-  const lowerCaseText = json.message!.text
-    .toLowerCase()
-    .trim()
-    .replace("/", "");
+  const c = parseCommand(json.message!.text);
 
-  if (lowerCaseText === "now" || lowerCaseText === "tomorrow") {
+  if ((c.command === "now" || c.command === "tomorrow") && !c.city) {
     const locationTuples = (await listLocations(ctx.user.id))
       .map((x) => [x.id, x.name!] as [string, string]);
 
     return withForecastRequestInlineMenu(
       response(chatId, "Which location do you want to check the weather for?"),
-      lowerCaseText,
+      c.command,
       locationTuples,
     );
   }
-
-  const c = parseCommand(json.message!.text);
 
   if (c.command === "settings") {
     return withSettingsInlineMenu(response(chatId, "What do you want to check?"));
