@@ -40,6 +40,26 @@ export const createUser = (params: CreateUserParams) =>
     RETURNING *`)
     .then(unwrapOneUser);
 
+export type UpdateUserParams = {
+  telegramId: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  language_code?: string;
+  is_bot?: boolean;
+};
+
+export const updateUser = (params: UpdateUserParams) =>
+  runQuery<User>(`UPDATE users SET
+      username='${params.username}',
+      first_name='${params.first_name}',
+      last_name='${params.last_name}',
+      language_code='${params.language_code ?? "en"}',
+      is_bot='${params.is_bot ?? false}'
+    WHERE telegram_chat_id='${params.telegramId}'
+    RETURNING *`)
+    .then(unwrapOneUser);
+
 // Location Repository
 
 export type Coordinates = { latitude: number; longitude: number };

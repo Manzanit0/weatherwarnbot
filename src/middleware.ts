@@ -2,7 +2,7 @@ import { Context } from "https://deno.land/x/oak@v9.0.0/context.ts";
 import { isHttpError, RouteParams, RouterContext, Status } from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import { Logger } from "./logger.ts";
 import { GeolocationClient } from "./positionstack.ts";
-import { createUser, CreateUserParams, findUser, User } from "./repository.ts";
+import { createUser, CreateUserParams, findUser, updateUser, UpdateUserParams, User } from "./repository.ts";
 import { getChatId, response, TelegramRequestBody } from "./telegram.ts";
 
 export type ContextState = {
@@ -68,6 +68,10 @@ export async function trackUser(ctx: OakContext, next: NxtFn) {
     ctx.throw(Status.BadRequest, "missing chat_id in Telegram payload.");
   }
 
+  // TODO: we need to validate if it's a group, and update the user as the
+  // group.  Currently it's creating a user for the group and using the
+  // messaging user's details.
+
   let user = await findUser(chatId);
   if (!user) {
     let userParams: CreateUserParams;
@@ -81,6 +85,15 @@ export async function trackUser(ctx: OakContext, next: NxtFn) {
     }
 
     user = await createUser(userParams);
+  } else if (!user.username) {
+    let userParams: UpdateUserParams;
+    if (json.callback_query?.from) {
+      userParams = { ...user, ...json.callback_query.from, telegramId: chatId };
+      user = await updateUser(userParams);
+    } else if (json.message?.from) {
+      userParams = { ...user, ...json.message.from, telegramId: chatId };
+      user = await updateUser(userParams);
+    }
   }
 
   ctx.state.user = user;
