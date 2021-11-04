@@ -30,7 +30,7 @@ telegramRouter.post("/", async (ctx) => {
     if (json.message.location) {
       ctx.response.body = await handleLocation(authCtx);
     } else if (json.message.text) {
-      ctx.response.body = await handleCommand(authCtx);
+      ctx.response.body = await handleCommand(authCtx, json.message);
     } else {
       ctx.response.body = handleUnknownPayload(authCtx);
     }

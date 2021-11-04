@@ -10,6 +10,7 @@ import {
   parseCommand,
   response,
   TelegramCallbackQuery,
+  TelegramMessage,
   withForecastRequestInlineMenu,
   withLocationInlineMenu,
   withSettingsInlineMenu,
@@ -52,15 +53,14 @@ export async function handleLocation(ctx: AuthenticatedContext) {
   return response(chatId, message);
 }
 
-export async function handleCommand(ctx: AuthenticatedContext) {
-  const json = ctx.payload;
-  if (!json.message?.text) {
+export async function handleCommand(ctx: AuthenticatedContext, message: TelegramMessage) {
+  if (message?.text) {
     throw new Error("telegram payload missing text");
   }
 
   const chatId = ctx.user.telegramId;
 
-  const c = parseCommand(json.message.text);
+  const c = parseCommand(message.text);
 
   if ((c.command === "now" || c.command === "tomorrow") && !c.city) {
     const locationTuples = (await listLocations(ctx.user.id))
