@@ -76,12 +76,12 @@ export type Coordinates = { latitude: number; longitude: number };
 
 export type UserLocation = {
   id: string;
-  user_id: string;
-  name?: string;
+  userId: string;
+  name: string;
   coordinates: Coordinates;
 };
 
-export type DbUserLocation = {
+type DbUserLocation = {
   id: string;
   user_id: string;
   name?: string;
@@ -146,11 +146,14 @@ const decodeCoordinates = (coordinates: string) => {
 
 const encodeCoordinates = (coordinates: Coordinates) => `(${coordinates.latitude}, ${coordinates.longitude})`;
 
-const toUserLocation = (x: DbUserLocation) => ({ ...x, coordinates: decodeCoordinates(x.coordinates) } as UserLocation);
+const toUserLocation = (x: DbUserLocation) => ({
+  id: x.id,
+  userId: x.user_id,
+  name: x.name,
+  coordinates: decodeCoordinates(x.coordinates),
+} as UserLocation);
 
-const toUser = (
-  x: DbUser,
-) => ({
+const toUser = (x: DbUser) => ({
   id: x.id,
   username: x.username,
   telegramId: x.telegram_chat_id,

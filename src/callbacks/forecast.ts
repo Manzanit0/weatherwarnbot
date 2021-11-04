@@ -31,10 +31,10 @@ async function handleForecastCallback(ctx: AuthenticatedContext) {
 
   const message = await newRetrospectiveForecastMessage(when, {
     coordinates: location.coordinates,
-    name: location.name!,
+    name: location.name,
   });
 
-  await answerCallbackQuery(ctx.payload, `Fetching weather for ${location.name || "location"}`);
+  await answerCallbackQuery(ctx.payload, `Fetching weather for ${location.name}`);
   sendMessage(ctx.user.telegramId, message);
 }
 
