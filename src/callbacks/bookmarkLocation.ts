@@ -1,3 +1,4 @@
+import { AuthenticatedContext } from "../middleware.ts";
 import { createUserLocation, findLocationByNameAndUser } from "../repository.ts";
 import {
   answerCallbackQuery,
@@ -7,30 +8,29 @@ import {
   updateMessage,
   withInlineKeyboard,
 } from "../telegram.ts";
-import { CallbackContext } from "./callbackUsecase.ts";
 
 const callbackDataKey = "location:bookmark";
 
 const isBookmarkLocationCallback = (callback: TelegramCallbackQuery) =>
   callback.data?.includes(callbackDataKey) ?? false;
 
-async function handleBookmarkLocationCallback(ctx: CallbackContext) {
-  if (!isBookmarkLocationCallback(ctx.callback)) {
+async function handleBookmarkLocationCallback(ctx: AuthenticatedContext, callback: TelegramCallbackQuery) {
+  if (!isBookmarkLocationCallback(callback)) {
     throw new Error("is not bookmark location payload");
   }
 
-  const [_, locationName] = ctx.callback.data!.split(callbackDataKey + ":");
+  const [_, locationName] = callback.data!.split(callbackDataKey + ":");
   const [city, _countryCode] = locationName.split(",");
 
   const location = await findLocationByNameAndUser(city, ctx.user.id);
   if (location) {
-    await answerCallbackQuery(ctx.callback, "Location already bookmarked!");
+    await answerCallbackQuery(callback, "Location already bookmarked!");
     return;
   }
 
   const geolocation = await ctx.geolocationClient.findLocation(city);
   if (!geolocation) {
-    await answerCallbackQuery(ctx.callback, "Unable to geolocate location by name");
+    await answerCallbackQuery(callback, "Unable to geolocate location by name");
     return;
   }
 
@@ -46,14 +46,14 @@ async function handleBookmarkLocationCallback(ctx: CallbackContext) {
     positionstack: geolocation,
   });
 
-  const originalMessageId = ctx.callback.message.message_id;
-  const originalMessageText = ctx.callback.message.text;
+  const originalMessageId = callback.message.message_id;
+  const originalMessageText = callback.message.text;
   const payload = withInlineKeyboard(response(ctx.user.telegramId, originalMessageText), [[
     enableNotificationsInlineButton,
   ]]);
 
   await updateMessage(originalMessageId, payload);
-  await answerCallbackQuery(ctx.callback, "Location bookmarked!");
+  await answerCallbackQuery(callback, "Location bookmarked!");
 }
 
 // complies with CallbackUsecase interface

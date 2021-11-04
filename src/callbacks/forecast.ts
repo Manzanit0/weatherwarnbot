@@ -1,18 +1,18 @@
+import { AuthenticatedContext } from "../middleware.ts";
 import { findLocationById } from "../repository.ts";
 import { newRetrospectiveForecastMessage } from "../retrospective.ts";
 import { answerCallbackQuery, sendMessage, TelegramCallbackQuery } from "../telegram.ts";
-import { CallbackContext } from "./callbackUsecase.ts";
 
 const callbackDataKey = "forecast:";
 
 const isForecastCallback = (callback: TelegramCallbackQuery) => callback.data?.includes(callbackDataKey) ?? false;
 
-async function handleForecastCallback(ctx: CallbackContext) {
-  if (!isForecastCallback(ctx.callback)) {
+async function handleForecastCallback(ctx: AuthenticatedContext, callback: TelegramCallbackQuery) {
+  if (!isForecastCallback(callback)) {
     throw new Error("no valid forecast callback");
   }
 
-  const data = ctx.callback.data!;
+  const data = callback.data!;
 
   const [_prefix, when, locationId] = data.split(":");
   if (!locationId) {
@@ -34,7 +34,7 @@ async function handleForecastCallback(ctx: CallbackContext) {
     name: location.name,
   });
 
-  await answerCallbackQuery(ctx.callback, `Fetching weather for ${location.name}`);
+  await answerCallbackQuery(callback, `Fetching weather for ${location.name}`);
   sendMessage(ctx.user.telegramId, message);
 }
 

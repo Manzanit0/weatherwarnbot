@@ -1,3 +1,4 @@
+import { AuthenticatedContext } from "../middleware.ts";
 import { deleteLocationById, findLocationById, listLocations } from "../repository.ts";
 import {
   answerCallbackQuery,
@@ -10,44 +11,43 @@ import {
   withLocationsSettingsKeyboard,
   withSettingsInlineMenu,
 } from "../telegram.ts";
-import { CallbackContext } from "./callbackUsecase.ts";
 
 const callbackDataKey = "settings:";
 
 const isSettingsCallback = (callback: TelegramCallbackQuery) => callback.data?.includes(callbackDataKey) ?? false;
 
-const handleSettingsCallback = async (ctx: CallbackContext) => {
-  if (!isSettingsCallback(ctx.callback)) {
+const handleSettingsCallback = async (ctx: AuthenticatedContext, callback: TelegramCallbackQuery) => {
+  if (!isSettingsCallback(callback)) {
     throw new Error("is not settings payload");
   }
 
-  const data = ctx.callback.data!;
+  const data = callback.data!;
   switch (data) {
     // Go back to initial settings screen.
     case "settings:back": {
-      await handleBackToSettingsCallback(ctx);
+      await handleBackToSettingsCallback(ctx, callback);
       break;
     }
     case "settings:delete": {
-      await handleDeleteDataCallback(ctx);
+      await handleDeleteDataCallback(ctx, callback);
       break;
     }
     case "settings:locations": {
-      await handleListLocationsCallback(ctx);
+      await handleListLocationsCallback(ctx, callback);
       break;
     }
     case "settings:notifications": {
-      await handleNotificationSettingsCallback(ctx);
+      await handleNotificationSettingsCallback(ctx, callback);
       break;
     }
     default: {
       if (data.includes("settings:locations") && data.includes(":delete")) {
         const [_n, nearlyLocationId] = data.split("settings:locations:");
         const [locationId, _m] = nearlyLocationId.split(":delete");
-        await handleDeleteLocationCallback(ctx, locationId);
+        await handleDeleteLocationCallback(ctx, callback, locationId);
       } else if (data.includes("settings:locations")) {
         const [_, locationId] = data.split("settings:locations:");
-        await handleShowLocationCallback(ctx, locationId);
+        await handleShowLocationCallback(ctx, callback, locationId);
       }
 
       break;
@@ -55,20 +55,20 @@ const handleSettingsCallback = async (ctx: CallbackContext) => {
   }
 };
 
-const handleBackToSettingsCallback = async (ctx: CallbackContext) => {
+const handleBackToSettingsCallback = async (ctx: AuthenticatedContext, callback: TelegramCallbackQuery) => {
   const payload = withSettingsInlineMenu(response(ctx.user.telegramId, "What do you want to check?"));
-  const originalMessageId = ctx.callback.message.message_id;
+  const originalMessageId = callback.message.message_id;
   await updateMessage(originalMessageId, payload);
-  await answerCallbackQuery(ctx.callback, "Request processed!");
+  await answerCallbackQuery(callback, "Request processed!");
 };
 
-const handleDeleteDataCallback = async (ctx: CallbackContext) => {
+const handleDeleteDataCallback = async (ctx: AuthenticatedContext, callback: TelegramCallbackQuery) => {
   await sendMessage(ctx.user.telegramId, "We will process your request within 30 days.");
-  await answerCallbackQuery(ctx.callback, "Request processed!");
+  await answerCallbackQuery(callback, "Request processed!");
 };
 
-const handleNotificationSettingsCallback = async (ctx: CallbackContext) => {
-  const originalMessageId = ctx.callback.message.message_id;
+const handleNotificationSettingsCallback = async (ctx: AuthenticatedContext, callback: TelegramCallbackQuery) => {
+  const originalMessageId = callback.message.message_id;
   const payload = withBackToSettingsInlineButton(
     withInlineKeyboard(
       response(ctx.user.telegramId, "Here are your notification settings:"),
@@ -80,17 +80,21 @@ const handleNotificationSettingsCallback = async (ctx: CallbackContext) => {
   );
 
   await updateMessage(originalMessageId, payload);
-  await answerCallbackQuery(ctx.callback, "Succesfully listed locations!");
+  await answerCallbackQuery(callback, "Succesfully listed locations!");
 };
 
-const handleListLocationsCallback = async (ctx: CallbackContext) => {
-  const originalMessageId = ctx.callback.message.message_id;
+const handleListLocationsCallback = async (ctx: AuthenticatedContext, callback: TelegramCallbackQuery) => {
+  const originalMessageId = callback.message.message_id;
   const payload = await listLocationsPayload(ctx);
   await updateMessage(originalMessageId, payload);
-  await answerCallbackQuery(ctx.callback, "Succesfully listed locations!");
+  await answerCallbackQuery(callback, "Succesfully listed locations!");
 };
 
-const handleShowLocationCallback = async (ctx: CallbackContext, locationId: string) => {
+const handleShowLocationCallback = async (
+  ctx: AuthenticatedContext,
+  callback: TelegramCallbackQuery,
+  locationId: string,
+) => {
   const location = await findLocationById(locationId);
   if (!location) {
     throw new Error("No location found");
@@ -103,12 +107,16 @@ const handleShowLocationCallback = async (ctx: CallbackContext, locationId: stri
     ),
   );
 
-  const originalMessageId = ctx.callback.message.message_id;
-  await answerCallbackQuery(ctx.callback, "");
+  const originalMessageId = callback.message.message_id;
+  await answerCallbackQuery(callback, "");
   await updateMessage(originalMessageId, payload);
 };
 
-const handleDeleteLocationCallback = async (ctx: CallbackContext, locationId: string) => {
+const handleDeleteLocationCallback = async (
+  ctx: AuthenticatedContext,
+  callback: TelegramCallbackQuery,
+  locationId: string,
+) => {
   const location = await findLocationById(locationId);
   if (!location) {
     throw new Error("No location found");
@@ -116,20 +124,20 @@ const handleDeleteLocationCallback = async (ctx: CallbackContext, locationId: st
 
   const amount = await deleteLocationById(locationId);
   if (amount === 1) {
-    await answerCallbackQuery(ctx.callback, "Deletion successful!");
+    await answerCallbackQuery(callback, "Deletion successful!");
   } else if (amount === 0) {
-    await answerCallbackQuery(ctx.callback, "We've hit a 🐛, try again later.");
+    await answerCallbackQuery(callback, "We've hit a 🐛, try again later.");
   } else {
-    await answerCallbackQuery(ctx.callback, "Uh oh... something went weird.");
+    await answerCallbackQuery(callback, "Uh oh... something went weird.");
     ctx.logger.info("More locations deleted than there should have been");
   }
 
-  const originalMessageId = ctx.callback.message.message_id;
+  const originalMessageId = callback.message.message_id;
   const payload = await listLocationsPayload(ctx);
   await updateMessage(originalMessageId, payload);
 };
 
-const listLocationsPayload = async (ctx: CallbackContext) => {
+const listLocationsPayload = async (ctx: AuthenticatedContext) => {
   const locations = await listLocations(ctx.user.id);
   const locationTuples = locations.map((x) => [`settings:locations:${x.id}`, x.name] as [string, string]);
   return withBackToSettingsInlineButton(

@@ -35,7 +35,7 @@ telegramRouter.post("/", async (ctx) => {
       ctx.response.body = handleUnknownPayload(authCtx);
     }
   } else if (json.callback_query) {
-    await handleCallback(authCtx);
+    await handleCallback(authCtx, json.callback_query);
     ctx.response.body = "";
   }
 });

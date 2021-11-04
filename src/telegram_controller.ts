@@ -9,15 +9,16 @@ import {
   answerCallbackQuery,
   parseCommand,
   response,
+  TelegramCallbackQuery,
   withForecastRequestInlineMenu,
   withLocationInlineMenu,
   withSettingsInlineMenu,
 } from "./telegram.ts";
-import { callbackContext, findValid } from "./callbacks/callbackUsecase.ts";
+import { findValid } from "./callbacks/callbackUsecase.ts";
 import { newRetrospectiveForecastMessage } from "./retrospective.ts";
 
-export async function handleCallback(ctx: AuthenticatedContext) {
-  if (!ctx.payload.callback_query?.data) {
+export async function handleCallback(ctx: AuthenticatedContext, callback: TelegramCallbackQuery) {
+  if (!callback.data) {
     throw new Error("telegram payload missing callback_query");
   }
 
@@ -27,13 +28,11 @@ export async function handleCallback(ctx: AuthenticatedContext) {
     forecastUsecase,
   ];
 
-  const usecase = findValid(usecases, ctx.payload.callback_query);
+  const usecase = findValid(usecases, callback);
   if (usecase) {
-    const cbCtx = callbackContext(ctx);
-    await usecase.handle(cbCtx);
+    await usecase.handle(ctx, callback);
   } else {
-    const data = ctx.payload.callback_query.data;
-    await answerCallbackQuery(ctx.payload.callback_query, `received ${data} callback`);
+    await answerCallbackQuery(callback, `received ${callback.data} callback`);
   }
 }
 
