@@ -13,7 +13,7 @@ export type TelegramUpdate = {
 };
 
 // https://core.telegram.org/bots/api#message
-type TelegramMessage = {
+export type TelegramMessage = {
   // Unique message identifier inside this chat
   message_id: string;
   // For text messages, the actual UTF-8 text of the message, 0-4096 characters
@@ -108,14 +108,14 @@ export function response(chatId: string, text: string): TelegramResponseBody {
   };
 }
 
-export async function answerCallbackQuery({ callback_query: query }: TelegramUpdate, message: string) {
+export async function answerCallbackQuery(query: TelegramCallbackQuery, message: string) {
   const req = await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      callback_query_id: query!.id,
+      callback_query_id: query.id,
       text: message,
     }),
   });

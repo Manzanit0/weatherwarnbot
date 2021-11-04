@@ -13,12 +13,11 @@ import {
   withLocationInlineMenu,
   withSettingsInlineMenu,
 } from "./telegram.ts";
-import { findValid } from "./callbacks/callbackUsecase.ts";
+import { callbackContext, findValid } from "./callbacks/callbackUsecase.ts";
 import { newRetrospectiveForecastMessage } from "./retrospective.ts";
 
 export async function handleCallback(ctx: AuthenticatedContext) {
-  const data = ctx.payload.callback_query?.data;
-  if (!data) {
+  if (!ctx.payload.callback_query?.data) {
     throw new Error("telegram payload missing callback_query");
   }
 
@@ -28,11 +27,13 @@ export async function handleCallback(ctx: AuthenticatedContext) {
     forecastUsecase,
   ];
 
-  const usecase = findValid(usecases, ctx.payload);
+  const usecase = findValid(usecases, ctx.payload.callback_query);
   if (usecase) {
-    await usecase.handle(ctx);
+    const cbCtx = callbackContext(ctx);
+    await usecase.handle(cbCtx);
   } else {
-    await answerCallbackQuery(ctx.payload, `received ${data} callback`);
+    const data = ctx.payload.callback_query.data;
+    await answerCallbackQuery(ctx.payload.callback_query, `received ${data} callback`);
   }
 }
 
@@ -54,13 +55,13 @@ export async function handleLocation(ctx: AuthenticatedContext) {
 
 export async function handleCommand(ctx: AuthenticatedContext) {
   const json = ctx.payload;
-  if (!json.message!.text) {
+  if (!json.message?.text) {
     throw new Error("telegram payload missing text");
   }
 
   const chatId = ctx.user.telegramId;
 
-  const c = parseCommand(json.message!.text);
+  const c = parseCommand(json.message.text);
 
   if ((c.command === "now" || c.command === "tomorrow") && !c.city) {
     const locationTuples = (await listLocations(ctx.user.id))
