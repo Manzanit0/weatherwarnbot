@@ -5,16 +5,39 @@ import { runQuery, unwrapAffectedRecordCount, unwrapMany, unwrapOne } from "./da
 // User Repository
 
 export type User = {
-  id: string;
-  telegram_chat_id: string;
+  "id": string;
+  "telegram_chat_id": string;
+  "username"?: string;
+  "first_name"?: string;
+  "last_name"?: string;
+  "language_code": string;
+  "is_bot": boolean;
 };
 
 export const findUser = (telegramId: string) =>
   runQuery<User>(`SELECT id, telegram_chat_id FROM users WHERE telegram_chat_id = '${telegramId}'`)
     .then(unwrapMaybeOneUser);
 
-export const createUser = ({ telegramId }: { telegramId: string }) =>
-  runQuery<User>(`INSERT INTO users (telegram_chat_id) VALUES ('${telegramId}') RETURNING id, telegram_chat_id`)
+export type CreateUserParams = {
+  telegramId: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  language_code?: string;
+  is_bot?: boolean;
+};
+
+export const createUser = (params: CreateUserParams) =>
+  runQuery<User>(`INSERT INTO users
+    (telegram_chat_id, username, first_name, last_name, language_code, is_bot)
+    VALUES (
+      '${params.telegramId}',
+      '${params.username}',
+      '${params.first_name}',
+      '${params.last_name}',
+      '${params.language_code ?? "en"}',
+      '${params.is_bot ?? false}')
+    RETURNING *`)
     .then(unwrapOneUser);
 
 // Location Repository

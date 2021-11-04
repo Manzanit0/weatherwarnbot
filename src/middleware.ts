@@ -2,7 +2,7 @@ import { Context } from "https://deno.land/x/oak@v9.0.0/context.ts";
 import { isHttpError, RouteParams, RouterContext, Status } from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import { Logger } from "./logger.ts";
 import { GeolocationClient } from "./positionstack.ts";
-import { createUser, findUser, User } from "./repository.ts";
+import { createUser, CreateUserParams, findUser, User } from "./repository.ts";
 import { getChatId, response, TelegramRequestBody } from "./telegram.ts";
 
 export type ContextState = {
@@ -70,7 +70,17 @@ export async function trackUser(ctx: OakContext, next: NxtFn) {
 
   let user = await findUser(chatId);
   if (!user) {
-    user = await createUser({ telegramId: chatId });
+    let userParams: CreateUserParams;
+    if (json.callback_query?.from) {
+      userParams = { ...json.callback_query.from, telegramId: chatId };
+    } else if (json.message?.from) {
+      userParams = { ...json.message.from, telegramId: chatId };
+    } else {
+      // Should have either one or the other.
+      ctx.throw(Status.BadRequest, "Invalid payload");
+    }
+
+    user = await createUser(userParams);
   }
 
   ctx.state.user = user;
