@@ -12,7 +12,7 @@ type MinimalLocation = {
   name: string;
 };
 
-type WhenString = "today" | "tomorrow";
+type WhenString = "now" | "tomorrow";
 
 export const newRetrospectiveForecastMessage = async (when: WhenString, location: MinimalLocation) => {
   let previous: Forecast, requested: Forecast;
@@ -32,7 +32,7 @@ export const newRetrospectiveForecastMessage = async (when: WhenString, location
 
       break;
     }
-    case "today": {
+    case "now": {
       requested = await fetchWeatherByCoordinates(
         location.coordinates.latitude,
         location.coordinates.longitude,

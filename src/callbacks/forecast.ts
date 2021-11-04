@@ -19,7 +19,7 @@ async function handleForecastCallback(ctx: AuthenticatedContext) {
     throw new Error("Unable to extract location name from callback_query");
   }
 
-  if (when !== "today" && when !== "tomorrow") {
+  if (when !== "now" && when !== "tomorrow") {
     throw new Error("Received funny callback data. It's neither today nor tomorrow.");
   }
 

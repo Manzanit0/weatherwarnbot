@@ -153,7 +153,7 @@ export async function requestDailyForecast(city: string, countryCode: string) {
   return blob;
 }
 
-const generateYesterdayTimestamp = () => new Date().setDate(new Date().getDate() - 1);
+const generateYesterdayTimestamp = () => Math.floor(new Date().setDate(new Date().getDate() - 1) / 1000);
 
 export async function requestYesterdaysForecast(coords: Coordinates) {
   const key = Deno.env.get("OPENWEATHERMAP_API_KEY");

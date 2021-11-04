@@ -99,25 +99,13 @@ que usar el sufijo con mi nombre: /help@weatherwarnbot.
 Tambien puedes probar a enviarme una localización.
         `,
     );
-  } else if (c.command == "now") {
+  } else if (c.command == "now" || c.command === "tomorrow") {
     const geolocation = await ctx.geolocationClient.findLocation(c.city!);
     if (!geolocation) {
       throw new Error("Unable to geolocate town by name");
     }
 
-    const message = await newRetrospectiveForecastMessage("today", {
-      coordinates: { latitude: geolocation.latitude, longitude: geolocation.longitude },
-      name: geolocation.name,
-    });
-
-    return withLocationInlineMenu(response(chatId, message), `${c.city},${c.country}`);
-  } else if (c.command == "tomorrow") {
-    const geolocation = await ctx.geolocationClient.findLocation(c.city!);
-    if (!geolocation) {
-      throw new Error("Unable to geolocate town by name");
-    }
-
-    const message = await newRetrospectiveForecastMessage("tomorrow", {
+    const message = await newRetrospectiveForecastMessage(c.command, {
       coordinates: { latitude: geolocation.latitude, longitude: geolocation.longitude },
       name: geolocation.name,
     });
