@@ -130,7 +130,6 @@ export type AuthenticatedContext = {
   geolocationClient: GeolocationClient;
   logger: Logger;
   user: User;
-  payload: TelegramUpdate;
 };
 
 export function authenticatedContext(ctx: ContextState): AuthenticatedContext {
@@ -146,6 +145,5 @@ export function authenticatedContext(ctx: ContextState): AuthenticatedContext {
     logger: ctx.logger,
     geolocationClient: ctx.geolocationClient,
     user: ctx.user,
-    payload: ctx.payload,
   };
 }

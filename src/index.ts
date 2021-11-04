@@ -24,11 +24,11 @@ telegramRouter.use(trackUser);
 
 telegramRouter.post("/", async (ctx) => {
   const authCtx = authenticatedContext(ctx.state);
-  const json = authCtx.payload;
+  const json = ctx.state.payload!;
 
   if (json.message) {
     if (json.message.location) {
-      ctx.response.body = await handleLocation(authCtx);
+      ctx.response.body = await handleLocation(authCtx, json.message.location);
     } else if (json.message.text) {
       ctx.response.body = await handleCommand(authCtx, json.message);
     } else {

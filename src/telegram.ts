@@ -25,7 +25,7 @@ export type TelegramMessage = {
   // Conversation the message belongs to.
   chat: TelegramChat;
   // Message is a shared location, information about the location.
-  location?: { latitude: number; longitude: number };
+  location?: TelegramLocation;
 };
 
 // https://core.telegram.org/bots/api#callbackquery
@@ -44,6 +44,11 @@ export type TelegramCallbackQuery = {
   // Identifier of the message sent via the bot in inline mode, that
   // originated the query.
   inline_message_id?: string;
+};
+
+export type TelegramLocation = {
+  latitude: number;
+  longitude: number;
 };
 
 // https://core.telegram.org/bots/api#user

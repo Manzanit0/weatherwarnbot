@@ -10,6 +10,7 @@ import {
   parseCommand,
   response,
   TelegramCallbackQuery,
+  TelegramLocation,
   TelegramMessage,
   withForecastRequestInlineMenu,
   withLocationInlineMenu,
@@ -37,15 +38,10 @@ export async function handleCallback(ctx: AuthenticatedContext, callback: Telegr
   }
 }
 
-export async function handleLocation(ctx: AuthenticatedContext) {
-  const json = ctx.payload;
-  if (!json.message || !json.message.location) {
-    throw new Error("telegram payload missing location");
-  }
-
+export async function handleLocation(ctx: AuthenticatedContext, location: TelegramLocation) {
   const forecast = await fetchWeatherByCoordinates(
-    json.message.location.latitude,
-    json.message.location.longitude,
+    location.latitude,
+    location.longitude,
   );
 
   const message = buildForecastMessage(forecast);
