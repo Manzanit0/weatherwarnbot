@@ -42,6 +42,30 @@ Deno.test("help command", () => {
   a.assertEquals(command.country, undefined);
 });
 
+Deno.test("Command with @bot", () => {
+  const command = parseCommand("/tomorrow@weatherwarnbot city,es");
+
+  a.assertEquals(command.command, "tomorrow");
+  a.assertEquals(command.city, "city");
+  a.assertEquals(command.country, "es");
+});
+
+Deno.test("Tomorrow with @bot without params", () => {
+  const command = parseCommand("/tomorrow@weatherwarnbot");
+
+  a.assertEquals(command.command, "tomorrow");
+  a.assertEquals(command.city, undefined);
+  a.assertEquals(command.country, undefined);
+});
+
+Deno.test("Tomorrow with @bot with params", () => {
+  const command = parseCommand("/tomorrow@weatherwarnbot city, es");
+
+  a.assertEquals(command.command, "tomorrow");
+  a.assertEquals(command.city, "city");
+  a.assertEquals(command.country, "es");
+});
+
 Deno.test("unknown command throws", () => {
   a.assertThrows(() => parseCommand("/foo"));
 });
