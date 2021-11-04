@@ -288,7 +288,7 @@ export function parseCommand(command: string): TelegramCommand {
     return { command: "settings" };
   }
 
-  // https://regex101.com/r/g4ajjf/2
+  // https://regex101.com/r/g4ajjf/3
   const regex = /^\/(?<command>\w+)(?:@?(?<botname>\w*))?\s*(?:(?<city>.+),\s*(?<country>[a-zA-Z0-9_-]+))?$/;
   const match = command.match(regex);
 
