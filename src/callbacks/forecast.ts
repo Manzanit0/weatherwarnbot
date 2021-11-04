@@ -35,7 +35,7 @@ async function handleForecastCallback(ctx: AuthenticatedContext) {
   });
 
   await answerCallbackQuery(ctx.payload, `Fetching weather for ${location.name || "location"}`);
-  sendMessage(ctx.user.telegram_chat_id, message);
+  sendMessage(ctx.user.telegramId, message);
 }
 
 export default {

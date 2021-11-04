@@ -56,14 +56,14 @@ const handleSettingsCallback = async (ctx: AuthenticatedContext) => {
 };
 
 const handleBackToSettingsCallback = async (ctx: AuthenticatedContext) => {
-  const payload = withSettingsInlineMenu(response(ctx.user.telegram_chat_id, "What do you want to check?"));
+  const payload = withSettingsInlineMenu(response(ctx.user.telegramId, "What do you want to check?"));
   const originalMessageId = ctx.payload.callback_query!.message.message_id;
   await updateMessage(originalMessageId, payload);
   await answerCallbackQuery(ctx.payload, "Request processed!");
 };
 
 const handleDeleteDataCallback = async (ctx: AuthenticatedContext) => {
-  await sendMessage(ctx.user.telegram_chat_id, "We will process your request within 30 days.");
+  await sendMessage(ctx.user.telegramId, "We will process your request within 30 days.");
   await answerCallbackQuery(ctx.payload, "Request processed!");
 };
 
@@ -71,7 +71,7 @@ const handleNotificationSettingsCallback = async (ctx: AuthenticatedContext) => 
   const originalMessageId = ctx.payload.callback_query!.message.message_id;
   const payload = withBackToSettingsInlineButton(
     withInlineKeyboard(
-      response(ctx.user.telegram_chat_id, "Here are your notification settings:"),
+      response(ctx.user.telegramId, "Here are your notification settings:"),
       [[
         { text: "🎚 Turn off", callback_data: "settings:notifications:off" },
         { text: "⏰ Set time", callback_data: "settings:notifications:set_time" },
@@ -98,7 +98,7 @@ const handleShowLocationCallback = async (ctx: AuthenticatedContext, locationId:
 
   const payload = withBackToSettingsInlineButton(
     withInlineKeyboard(
-      response(ctx.user.telegram_chat_id, `Here it is: ${location.name}`),
+      response(ctx.user.telegramId, `Here it is: ${location.name}`),
       [[{ text: "❌ Delete location", callback_data: `settings:locations:${location.id}:delete` }]],
     ),
   );
@@ -134,7 +134,7 @@ const listLocationsPayload = async (ctx: AuthenticatedContext) => {
   const locationTuples = locations.map((x) => [`settings:locations:${x.id}`, x.name] as [string, string]);
   return withBackToSettingsInlineButton(
     withLocationsSettingsKeyboard(
-      response(ctx.user.telegram_chat_id, "Which of these locations do you want to edit?"),
+      response(ctx.user.telegramId, "Which of these locations do you want to edit?"),
       locationTuples,
     ),
   );

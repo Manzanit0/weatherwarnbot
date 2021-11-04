@@ -48,7 +48,7 @@ export async function handleLocation(ctx: AuthenticatedContext) {
   );
 
   const message = buildForecastMessage(forecast);
-  const chatId = ctx.user.telegram_chat_id;
+  const chatId = ctx.user.telegramId;
   return response(chatId, message);
 }
 
@@ -58,7 +58,7 @@ export async function handleCommand(ctx: AuthenticatedContext) {
     throw new Error("telegram payload missing text");
   }
 
-  const chatId = ctx.user.telegram_chat_id;
+  const chatId = ctx.user.telegramId;
 
   const c = parseCommand(json.message!.text);
 
@@ -122,7 +122,7 @@ Tambien puedes probar a enviarme una localización.
 }
 
 export function handleUnknownPayload(ctx: AuthenticatedContext) {
-  const chatId = ctx.user.telegram_chat_id;
+  const chatId = ctx.user.telegramId;
   return response(
     chatId,
     "What the hell did you just send me? STFU...",

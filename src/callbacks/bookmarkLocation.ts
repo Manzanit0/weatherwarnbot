@@ -48,7 +48,7 @@ async function handleBookmarkLocationCallback(ctx: AuthenticatedContext) {
 
   const originalMessageId = ctx.payload.callback_query!.message.message_id;
   const originalMessageText = ctx.payload.callback_query!.message.text;
-  const payload = withInlineKeyboard(response(ctx.user.telegram_chat_id, originalMessageText), [[
+  const payload = withInlineKeyboard(response(ctx.user.telegramId, originalMessageText), [[
     enableNotificationsInlineButton,
   ]]);
 

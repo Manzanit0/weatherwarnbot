@@ -118,7 +118,7 @@ export async function handleErrors(ctx: OakContext, next: NxtFn) {
       ctx.response.body = { error: err.message };
       ctx.response.status = err.status;
     } else if (user) {
-      ctx.response.body = response(user.telegram_chat_id, `${err}`);
+      ctx.response.body = response(user.telegramId, `${err}`);
     } else {
       ctx.response.status = Status.InternalServerError;
       ctx.response.body = { error: `${err}` };

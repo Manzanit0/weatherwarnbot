@@ -4,7 +4,7 @@ import { runQuery, unwrapAffectedRecordCount, unwrapMany, unwrapOne } from "./da
 
 // User Repository
 
-export type User = {
+type DbUser = {
   "id": string;
   "telegram_chat_id": string;
   "username"?: string;
@@ -14,8 +14,18 @@ export type User = {
   "is_bot": boolean;
 };
 
+export type User = {
+  id: string;
+  telegramId: string;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  languageCode: string;
+  isBot: boolean;
+};
+
 export const findUser = (telegramId: string) =>
-  runQuery<User>(`SELECT id, telegram_chat_id FROM users WHERE telegram_chat_id = '${telegramId}'`)
+  runQuery<DbUser>(`SELECT id, telegram_chat_id FROM users WHERE telegram_chat_id = '${telegramId}'`)
     .then(unwrapMaybeOneUser);
 
 export type CreateUserParams = {
@@ -28,7 +38,7 @@ export type CreateUserParams = {
 };
 
 export const createUser = (params: CreateUserParams) =>
-  runQuery<User>(`INSERT INTO users
+  runQuery<DbUser>(`INSERT INTO users
     (telegram_chat_id, username, first_name, last_name, language_code, is_bot)
     VALUES (
       '${params.telegramId}',
@@ -50,7 +60,7 @@ export type UpdateUserParams = {
 };
 
 export const updateUser = (params: UpdateUserParams) =>
-  runQuery<User>(`UPDATE users SET
+  runQuery<DbUser>(`UPDATE users SET
       username='${params.username}',
       first_name='${params.first_name}',
       last_name='${params.last_name}',
@@ -138,9 +148,21 @@ const encodeCoordinates = (coordinates: Coordinates) => `(${coordinates.latitude
 
 const toUserLocation = (x: DbUserLocation) => ({ ...x, coordinates: decodeCoordinates(x.coordinates) } as UserLocation);
 
+const toUser = (
+  x: DbUser,
+) => ({
+  id: x.id,
+  username: x.username,
+  telegramId: x.telegram_chat_id,
+  firstName: x.first_name,
+  lastName: x.last_name,
+  languageCode: x.language_code,
+  isBot: x.is_bot,
+} as User);
+
 const assertOne = <T>(x: T | null | undefined) => x || throwError("a record was expected, got null | undefined");
 
-const unwrapMaybeOneUser: () => User | null = R.curry(unwrapOne)(R.identity);
+const unwrapMaybeOneUser: () => User | null = R.curry(unwrapOne)(toUser);
 
 const unwrapOneUser: () => User = R.compose(assertOne, unwrapMaybeOneUser);
 
