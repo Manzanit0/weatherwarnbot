@@ -4,22 +4,22 @@ import {
   answerCallbackQuery,
   enableNotificationsInlineButton,
   response,
-  TelegramRequestBody,
+  TelegramUpdate,
   updateMessage,
   withInlineKeyboard,
 } from "../telegram.ts";
 
 const callbackDataKey = "location:bookmark";
 
-const isBookmarkLocationCallback = (body: TelegramRequestBody) =>
-  body.callback_query?.data.includes(callbackDataKey) ?? false;
+const isBookmarkLocationCallback = (body: TelegramUpdate) =>
+  body.callback_query?.data?.includes(callbackDataKey) ?? false;
 
 async function handleBookmarkLocationCallback(ctx: AuthenticatedContext) {
   if (!isBookmarkLocationCallback(ctx.payload)) {
     throw new Error("is not bookmark location payload");
   }
 
-  const [_, locationName] = ctx.payload.callback_query!.data.split(callbackDataKey + ":");
+  const [_, locationName] = ctx.payload.callback_query!.data!.split(callbackDataKey + ":");
   const [city, _countryCode] = locationName.split(",");
 
   const location = await findLocationByNameAndUser(city, ctx.user.id);

@@ -3,41 +3,73 @@ const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
 
 type TelegramParseMode = "markdown" | "text";
 type TelegramAPIMethod = "sendMessage";
-type TelegramChatType = "private" | "group";
+type TelegramChatType = "private" | "group" | "supergroup" | "channel";
 
-// Information from the user sending the message.
-type TelegramFrom = {
+// https://core.telegram.org/bots/api#making-requests
+export type TelegramUpdate = {
+  update_id: string;
+  message?: TelegramMessage;
+  callback_query?: TelegramCallbackQuery;
+};
+
+// https://core.telegram.org/bots/api#message
+type TelegramMessage = {
+  // Unique message identifier inside this chat
+  message_id: string;
+  // For text messages, the actual UTF-8 text of the message, 0-4096 characters
+  text: string;
+  // Date the message was sent in Unix time
+  date: number;
+  //  Sender, empty for messages sent to channels.
+  from: TelegramUser;
+  // Conversation the message belongs to.
+  chat: TelegramChat;
+  // Message is a shared location, information about the location.
+  location?: { latitude: number; longitude: number };
+};
+
+// https://core.telegram.org/bots/api#callbackquery
+export type TelegramCallbackQuery = {
+  // Unique identifier for this query
   id: string;
-  username: string;
+  // Global identifier, uniquely corresponding to the chat to which the
+  // message with the callback button was sent
+  chat_instance: string;
+  // Sender
+  from: TelegramUser;
+  // Message with the callback button that originated the query.
+  message: TelegramMessage;
+  // Data associated with the callback button.
+  data?: string;
+  // Identifier of the message sent via the bot in inline mode, that
+  // originated the query.
+  inline_message_id?: string;
+};
+
+// https://core.telegram.org/bots/api#user
+type TelegramUser = {
+  id: string;
+  username?: string;
   is_bot: boolean;
-  first_name?: string;
+  first_name: string;
   last_name?: string;
   language_code?: string;
 };
 
-type TelegramMessage = {
-  message_id: string;
-  text: string;
-  date: number;
-  from: TelegramFrom;
-  chat: {
-    id: string;
-    type: TelegramChatType;
-  };
-  location?: { latitude: number; longitude: number };
-  language_code?: string;
+// https://core.telegram.org/bots/api#chat
+type TelegramChat = {
+  id: string;
+  type: TelegramChatType;
+  title?: string;
+  description?: string;
 };
 
-export type TelegramRequestBody = {
-  update_id: string;
-  message?: TelegramMessage;
-  callback_query?: {
-    id: string;
-    from: TelegramFrom;
-    message: TelegramMessage;
-    chat_instance: string;
-    data: string;
-  };
+// FIXME: https://core.telegram.org/bots/api#inlinekeyboardmarkup
+type ReplyMarkup = {
+  inline_keyboard?: InlineKeyBoard;
+  // Fields for custom keyboards
+  one_time_keyboard?: boolean;
+  keyboard?: KeyBoard;
 };
 
 type InlineKeyBoardElement = {
@@ -49,13 +81,6 @@ type InlineKeyBoard = InlineKeyBoardElement[][];
 
 type KeyBoard = string[][];
 
-type ReplyMarkup = {
-  inline_keyboard?: InlineKeyBoard;
-  // Fields for custom keyboards
-  one_time_keyboard?: boolean;
-  keyboard?: KeyBoard;
-};
-
 export type TelegramResponseBody = {
   method: TelegramAPIMethod;
   chat_id: string;
@@ -64,11 +89,11 @@ export type TelegramResponseBody = {
   reply_markup?: ReplyMarkup;
 };
 
-export function getChatId(body: TelegramRequestBody) {
-  if (body.callback_query) {
-    return body.callback_query.message?.chat?.id;
-  } else if (body.message) {
-    return body.message.chat?.id;
+export function getChatId(update: TelegramUpdate) {
+  if (update.callback_query) {
+    return update.callback_query.message?.chat?.id;
+  } else if (update.message) {
+    return update.message.chat?.id;
   } else {
     return null;
   }
@@ -83,7 +108,7 @@ export function response(chatId: string, text: string): TelegramResponseBody {
   };
 }
 
-export async function answerCallbackQuery({ callback_query: query }: TelegramRequestBody, message: string) {
+export async function answerCallbackQuery({ callback_query: query }: TelegramUpdate, message: string) {
   const req = await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
     method: "POST",
     headers: {

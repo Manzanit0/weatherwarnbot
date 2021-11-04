@@ -3,13 +3,13 @@ import { isHttpError, RouteParams, RouterContext, Status } from "https://deno.la
 import { Logger } from "./logger.ts";
 import { GeolocationClient } from "./positionstack.ts";
 import { createUser, CreateUserParams, findUser, updateUser, UpdateUserParams, User } from "./repository.ts";
-import { getChatId, response, TelegramRequestBody } from "./telegram.ts";
+import { getChatId, response, TelegramUpdate } from "./telegram.ts";
 
 export type ContextState = {
   geolocationClient: GeolocationClient;
   logger: Logger;
   user?: User;
-  payload?: TelegramRequestBody;
+  payload?: TelegramUpdate;
 };
 
 type OakContext =
@@ -48,12 +48,12 @@ export async function parseTelegramWebhookBody(ctx: OakContext, next: NxtFn) {
   }
 
   const body = ctx.request.body({ type: "json" });
-  const json = (await body.value) as TelegramRequestBody;
+  const json = (await body.value) as TelegramUpdate;
 
   // TODO: we actually need to assert the whole thing here.
-  const isInvalidMessage = !json?.message || !json?.message?.chat?.id;
+  const isInvalidMessage = !json?.message?.chat?.id;
   const isInvalidCallback = !json?.callback_query;
-  if (!json || (isInvalidCallback && isInvalidMessage)) {
+  if (isInvalidCallback && isInvalidMessage) {
     ctx.throw(Status.BadRequest, "payload doesn't fulfill Telegram schema");
   }
 
@@ -130,7 +130,7 @@ export type AuthenticatedContext = {
   geolocationClient: GeolocationClient;
   logger: Logger;
   user: User;
-  payload: TelegramRequestBody;
+  payload: TelegramUpdate;
 };
 
 export function authenticatedContext(ctx: ContextState): AuthenticatedContext {

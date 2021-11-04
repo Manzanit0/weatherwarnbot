@@ -1,18 +1,18 @@
 import { AuthenticatedContext } from "../middleware.ts";
 import { findLocationById } from "../repository.ts";
 import { newRetrospectiveForecastMessage } from "../retrospective.ts";
-import { answerCallbackQuery, sendMessage, TelegramRequestBody } from "../telegram.ts";
+import { answerCallbackQuery, sendMessage, TelegramUpdate } from "../telegram.ts";
 
 const callbackDataKey = "forecast:";
 
-const isForecastCallback = (body: TelegramRequestBody) => body.callback_query?.data.includes(callbackDataKey) ?? false;
+const isForecastCallback = (body: TelegramUpdate) => body.callback_query?.data?.includes(callbackDataKey) ?? false;
 
 async function handleForecastCallback(ctx: AuthenticatedContext) {
   if (!isForecastCallback(ctx.payload)) {
     throw new Error("no valid forecast callback");
   }
 
-  const data = ctx.payload.callback_query!.data;
+  const data = ctx.payload.callback_query!.data!;
 
   const [_prefix, when, locationId] = data.split(":");
   if (!locationId) {

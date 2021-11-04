@@ -4,7 +4,7 @@ import {
   answerCallbackQuery,
   response,
   sendMessage,
-  TelegramRequestBody,
+  TelegramUpdate,
   updateMessage,
   withBackToSettingsInlineButton,
   withInlineKeyboard,
@@ -14,14 +14,14 @@ import {
 
 const callbackDataKey = "settings:";
 
-const isSettingsCallback = (body: TelegramRequestBody) => body.callback_query?.data.includes(callbackDataKey) ?? false;
+const isSettingsCallback = (body: TelegramUpdate) => body.callback_query?.data?.includes(callbackDataKey) ?? false;
 
 const handleSettingsCallback = async (ctx: AuthenticatedContext) => {
   if (!isSettingsCallback(ctx.payload)) {
     throw new Error("is not settings payload");
   }
 
-  const callbackData = ctx.payload.callback_query!.data;
+  const callbackData = ctx.payload.callback_query!.data!;
   switch (callbackData) {
     // Go back to initial settings screen.
     case "settings:back": {
