@@ -50,7 +50,7 @@ export async function handleLocation(ctx: AuthenticatedContext, location: Telegr
 }
 
 export async function handleCommand(ctx: AuthenticatedContext, message: TelegramMessage) {
-  if (message?.text) {
+  if (!message?.text) {
     throw new Error("telegram payload missing text");
   }
 
