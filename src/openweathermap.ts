@@ -111,55 +111,24 @@ interface HistoricalHourlyWeather {
   "rain": unknown;
 }
 
-export async function requestDailyForecastByCoordinate(coords: Coordinates) {
-  const key = Deno.env.get("OPENWEATHERMAP_API_KEY");
-  const url =
-    `http://api.openweathermap.org/data/2.5/forecast/daily/?lat=${coords.latitude}&lon=${coords.longitude}&APPID=${key}&units=metric&lang=es`;
+export const requestDailyForecastByCoordinate = (coords: Coordinates) =>
+  fetchOpenWeatherMap<DailyForecastResponse>(
+    `/data/2.5/forecast/daily/?lat=${coords.latitude}&lon=${coords.longitude}&units=metric&lang=es`,
+  );
 
-  dl.info(`Sending request to ${url}`);
-  const res = await fetch(url);
-  if (!res.ok) {
-    dl.warning(`http status ${res.status}`);
-    throw new Error("failed to make request to openweathermap API");
-  }
-
-  const blob = (await res.json()) as DailyForecastResponse;
-  if (!blob) {
-    dl.warning(`http status ${res.status}`);
-    throw new Error("unexpected response from openweathermap");
-  }
-
-  return blob;
-}
-
-export async function requestDailyForecast(city: string, countryCode: string) {
-  const key = Deno.env.get("OPENWEATHERMAP_API_KEY");
-  const url =
-    `http://api.openweathermap.org/data/2.5/forecast/daily/?q=${city},${countryCode}&APPID=${key}&units=metric&lang=es`;
-
-  dl.info(`Sending request to ${url}`);
-  const res = await fetch(url);
-  if (!res.ok) {
-    dl.warning(`http status ${res.status}`);
-    throw new Error("failed to make request to openweathermap API");
-  }
-
-  const blob = (await res.json()) as DailyForecastResponse;
-  if (!blob) {
-    dl.warning(`http status ${res.status}`);
-    throw new Error("unexpected response from openweathermap");
-  }
-
-  return blob;
-}
+export const requestDailyForecast = (city: string, countryCode: string) =>
+  fetchOpenWeatherMap<DailyForecastResponse>(`/data/2.5/forecast/daily/?q=${city},${countryCode}&units=metric&lang=es`);
 
 const generateYesterdayTimestamp = () => Math.floor(new Date().setDate(new Date().getDate() - 1) / 1000);
 
-export async function requestYesterdaysForecast(coords: Coordinates) {
+export const requestYesterdaysForecast = (coords: Coordinates) =>
+  fetchOpenWeatherMap<HistoricalWeatherResponse>(
+    `/data/2.5/onecall/timemachine?lat=${coords.latitude}&lon=${coords.longitude}&units=metric&lang=es&dt=${generateYesterdayTimestamp()}`,
+  );
+
+const fetchOpenWeatherMap = async <T>(endpoint: string) => {
   const key = Deno.env.get("OPENWEATHERMAP_API_KEY");
-  const dt = generateYesterdayTimestamp();
-  const url =
-    `http://api.openweathermap.org/data/2.5/onecall/timemachine?lat=${coords.latitude}&lon=${coords.longitude}&APPID=${key}&units=metric&lang=es&dt=${dt}`;
+  const url = `http://api.openweathermap.org${endpoint}&appid=${key}`;
 
   dl.info(`Sending request to ${url}`);
   const res = await fetch(url);
@@ -168,14 +137,14 @@ export async function requestYesterdaysForecast(coords: Coordinates) {
     throw new Error("failed to make request to openweathermap API");
   }
 
-  const blob = (await res.json()) as HistoricalWeatherResponse;
+  const blob = (await res.json()) as T;
   if (!blob) {
     dl.warning(`http status ${res.status}`);
     throw new Error("unexpected response from openweathermap");
   }
 
   return blob;
-}
+};
 
 export function conditionFromForecast(forecast: DayForecast): WeatherCondition | undefined {
   return codeToWeatherCondition(forecast.weather[0].id);
