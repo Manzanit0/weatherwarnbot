@@ -98,7 +98,7 @@ type CreateLocationParams = {
 
 export const createUserLocation = (params: CreateLocationParams) => {
   const name = params.name || "";
-  const positionstack = JSON.stringify(params.positionstack);
+  const positionstack = JSON.stringify(params.positionstack || {});
   const coordinates = encodeCoordinates(params.coordinates);
 
   const query = `

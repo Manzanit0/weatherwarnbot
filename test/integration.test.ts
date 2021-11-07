@@ -3,6 +3,10 @@ import createApp from "../src/application.ts";
 import { GeolocationClientMock } from "./mocks/GeolocationClientMock.ts";
 import { WeatherClientMock } from "./mocks/WeatherClientMock.ts";
 
+// TODO: Ideally we don't want to have these dependencies in the tests.
+import { newClient } from "../src/database.ts";
+import { createUser, createUserLocation } from "../src/repository.ts";
+
 const app = await createApp({ geolocation: new GeolocationClientMock(), weather: new WeatherClientMock() });
 
 // Stop from printing logs in test runner by setting level to critical.
@@ -33,6 +37,8 @@ Deno.test("the webhook only allows telegram-format requests", async () => {
 });
 
 Deno.test("tomorrow command without params and no saved locations", async () => {
+  await nukeDB();
+
   const body = JSON.stringify(
     {
       "update_id": 897804178,
@@ -59,6 +65,57 @@ Deno.test("tomorrow command without params and no saved locations", async () => 
     "text": "Which location do you want to check the weather for?",
     "parse_mode": "markdown",
     "reply_markup": { "inline_keyboard": [] },
+  });
+
+  await server()
+    .post("/api/telegram")
+    .set("Content-Type", "application/json")
+    .send(body)
+    .expect(200)
+    .expect(responseBody);
+});
+
+Deno.test("tomorrow command without params and saved locations", async () => {
+  await nukeDB();
+
+  const user = await createUser({ ...from, telegramId: from.id + "" });
+  const location = await createUserLocation({
+    user_id: user.id,
+    name: "Foo-land",
+    coordinates: { latitude: 123, longitude: 456 },
+  });
+
+  const body = JSON.stringify(
+    {
+      "update_id": 897804178,
+      "message": {
+        "message_id": 1877,
+        "from": from,
+        "chat": chat,
+        "date": 1636238095,
+        "text": "/tomorrow",
+        "entities": [
+          {
+            "offset": 0,
+            "length": 9,
+            "type": "bot_command",
+          },
+        ],
+      },
+    },
+  );
+
+  const responseBody = JSON.stringify({
+    "method": "sendMessage",
+    "chat_id": `${from.id}`,
+    "text": "Which location do you want to check the weather for?",
+    "parse_mode": "markdown",
+    "reply_markup": {
+      "inline_keyboard": [[{
+        "text": location.name,
+        "callback_data": `forecast:tomorrow:${location.id}`,
+      }]],
+    },
   });
 
   await server()
@@ -97,7 +154,7 @@ Deno.test("tomorrow command with city/country params", async () => {
     .expect(200);
 });
 
-Deno.test("callback upon pressing forecast location button", async () => {
+Deno.test("callback upon pressing forecast location button for a location that doesn't exist", async () => {
   const body = JSON.stringify(
     {
       "update_id": 897804179,
@@ -127,11 +184,19 @@ Deno.test("callback upon pressing forecast location button", async () => {
     },
   );
 
+  const expectedBody = JSON.stringify({
+    "method": "sendMessage",
+    "chat_id": `${from.id}`,
+    "text": "Error: received forecast:now callback for a location that doesn't exist",
+    "parse_mode": "markdown",
+  });
+
   await server()
     .post("/api/telegram")
     .set("Content-Type", "application/json")
     .send(body)
-    .expect(200);
+    .expect(200)
+    .expect(expectedBody);
 });
 
 // Canned data.
@@ -157,4 +222,14 @@ const chat = {
   "last_name": "Doe",
   "username": "jdoe",
   "type": "private",
+};
+
+// TODO: In order to avoid having to nuke the DB in each test, we need to push
+// the repository to the boundary to replace it with a in-memory one.
+const nukeDB = async () => {
+  const c = newClient();
+  await c.connect();
+  await c.queryObject("DELETE FROM user_locations;");
+  await c.queryObject("DELETE FROM users;");
+  await c.end();
 };
