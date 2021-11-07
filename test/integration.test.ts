@@ -32,7 +32,7 @@ Deno.test("the webhook only allows telegram-format requests", async () => {
     .expect(400);
 });
 
-Deno.test("tomorrow command without params", async () => {
+Deno.test("tomorrow command without params and no saved locations", async () => {
   const body = JSON.stringify(
     {
       "update_id": 897804178,
@@ -53,11 +53,20 @@ Deno.test("tomorrow command without params", async () => {
     },
   );
 
+  const responseBody = JSON.stringify({
+    "method": "sendMessage",
+    "chat_id": "123456",
+    "text": "Which location do you want to check the weather for?",
+    "parse_mode": "markdown",
+    "reply_markup": { "inline_keyboard": [] },
+  });
+
   await server()
     .post("/api/telegram")
     .set("Content-Type", "application/json")
     .send(body)
-    .expect(200);
+    .expect(200)
+    .expect(responseBody);
 });
 
 Deno.test("tomorrow command with city/country params", async () => {
