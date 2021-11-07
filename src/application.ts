@@ -11,11 +11,13 @@ import {
 } from "./middleware.ts";
 import { openWeatherMapClient, WeatherClient } from "./openweathermap.ts";
 import { GeolocationClient, PositionStackClient } from "./positionstack.ts";
+import { TelegramClient, telegramClient } from "./telegram/client.ts";
 import { handleCallback, handleCommand, handleLocation, handleUnknownPayload } from "./telegram_controller.ts";
 
 type Params = {
   geolocation?: GeolocationClient;
   weather?: WeatherClient;
+  telegram?: TelegramClient;
 };
 
 export default async (params: Params = {}) => {
@@ -50,9 +52,10 @@ export default async (params: Params = {}) => {
   const dl = await getLogger();
   const pc = params.geolocation ?? new PositionStackClient(dl);
   const wc = params.weather ?? openWeatherMapClient;
+  const tc = params.telegram ?? telegramClient;
 
   const app = new Application<ContextState>({
-    state: { logger: dl, geolocationClient: pc, weatherClient: wc },
+    state: { logger: dl, geolocationClient: pc, weatherClient: wc, telegramClient: tc },
     contextState: "prototype",
   });
 

@@ -1,16 +1,13 @@
 import { AuthenticatedContext } from "../middleware.ts";
 import { deleteLocationById, findLocationById, listLocations } from "../repository.ts";
+import { TelegramCallbackQuery } from "../telegram/types.ts";
 import {
-  answerCallbackQuery,
   response,
-  sendMessage,
-  TelegramCallbackQuery,
-  updateMessage,
   withBackToSettingsInlineButton,
   withInlineKeyboard,
   withLocationsSettingsKeyboard,
   withSettingsInlineMenu,
-} from "../telegram.ts";
+} from "../telegram/utils.ts";
 
 const callbackDataKey = "settings:";
 
@@ -58,13 +55,13 @@ const handleSettingsCallback = async (ctx: AuthenticatedContext, callback: Teleg
 const handleBackToSettingsCallback = async (ctx: AuthenticatedContext, callback: TelegramCallbackQuery) => {
   const payload = withSettingsInlineMenu(response(ctx.user.telegramId, "What do you want to check?"));
   const originalMessageId = callback.message.message_id;
-  await updateMessage(originalMessageId, payload);
-  await answerCallbackQuery(callback, "Request processed!");
+  await ctx.telegramClient.updateMessage(originalMessageId, payload);
+  await ctx.telegramClient.answerCallbackQuery(callback, "Request processed!");
 };
 
 const handleDeleteDataCallback = async (ctx: AuthenticatedContext, callback: TelegramCallbackQuery) => {
-  await sendMessage(ctx.user.telegramId, "We will process your request within 30 days.");
-  await answerCallbackQuery(callback, "Request processed!");
+  await ctx.telegramClient.sendMessage(ctx.user.telegramId, "We will process your request within 30 days.");
+  await ctx.telegramClient.answerCallbackQuery(callback, "Request processed!");
 };
 
 const handleNotificationSettingsCallback = async (ctx: AuthenticatedContext, callback: TelegramCallbackQuery) => {
@@ -79,15 +76,15 @@ const handleNotificationSettingsCallback = async (ctx: AuthenticatedContext, cal
     ),
   );
 
-  await updateMessage(originalMessageId, payload);
-  await answerCallbackQuery(callback, "Succesfully listed locations!");
+  await ctx.telegramClient.updateMessage(originalMessageId, payload);
+  await ctx.telegramClient.answerCallbackQuery(callback, "Succesfully listed locations!");
 };
 
 const handleListLocationsCallback = async (ctx: AuthenticatedContext, callback: TelegramCallbackQuery) => {
   const originalMessageId = callback.message.message_id;
   const payload = await listLocationsPayload(ctx);
-  await updateMessage(originalMessageId, payload);
-  await answerCallbackQuery(callback, "Succesfully listed locations!");
+  await ctx.telegramClient.updateMessage(originalMessageId, payload);
+  await ctx.telegramClient.answerCallbackQuery(callback, "Succesfully listed locations!");
 };
 
 const handleShowLocationCallback = async (
@@ -108,8 +105,8 @@ const handleShowLocationCallback = async (
   );
 
   const originalMessageId = callback.message.message_id;
-  await answerCallbackQuery(callback, "");
-  await updateMessage(originalMessageId, payload);
+  await ctx.telegramClient.answerCallbackQuery(callback, "");
+  await ctx.telegramClient.updateMessage(originalMessageId, payload);
 };
 
 const handleDeleteLocationCallback = async (
@@ -124,17 +121,17 @@ const handleDeleteLocationCallback = async (
 
   const amount = await deleteLocationById(locationId);
   if (amount === 1) {
-    await answerCallbackQuery(callback, "Deletion successful!");
+    await ctx.telegramClient.answerCallbackQuery(callback, "Deletion successful!");
   } else if (amount === 0) {
-    await answerCallbackQuery(callback, "We've hit a 🐛, try again later.");
+    await ctx.telegramClient.answerCallbackQuery(callback, "We've hit a 🐛, try again later.");
   } else {
-    await answerCallbackQuery(callback, "Uh oh... something went weird.");
+    await ctx.telegramClient.answerCallbackQuery(callback, "Uh oh... something went weird.");
     ctx.logger.info("More locations deleted than there should have been");
   }
 
   const originalMessageId = callback.message.message_id;
   const payload = await listLocationsPayload(ctx);
-  await updateMessage(originalMessageId, payload);
+  await ctx.telegramClient.updateMessage(originalMessageId, payload);
 };
 
 const listLocationsPayload = async (ctx: AuthenticatedContext) => {

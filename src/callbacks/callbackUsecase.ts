@@ -1,5 +1,5 @@
 import { AuthenticatedContext } from "../middleware.ts";
-import { TelegramCallbackQuery } from "../telegram.ts";
+import { TelegramCallbackQuery } from "../telegram/types.ts";
 
 export interface CallbackUsecase {
   isValid(callback: TelegramCallbackQuery): boolean;

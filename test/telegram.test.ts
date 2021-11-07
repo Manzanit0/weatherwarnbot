@@ -1,5 +1,5 @@
 import * as a from "https://deno.land/std@0.102.0/testing/asserts.ts";
-import { parseCommand } from "../src/telegram.ts";
+import { parseCommand } from "../src/telegram/utils.ts";
 
 // Simple name and function, compact form, but not configurable
 Deno.test("simple match", () => {

@@ -4,11 +4,14 @@ import { Logger } from "./logger.ts";
 import { WeatherClient } from "./openweathermap.ts";
 import { GeolocationClient } from "./positionstack.ts";
 import { createUser, CreateUserParams, findUser, updateUser, UpdateUserParams, User } from "./repository.ts";
-import { getChatId, response, TelegramUpdate } from "./telegram.ts";
+import { TelegramClient } from "./telegram/client.ts";
+import { TelegramUpdate } from "./telegram/types.ts";
+import { getChatId, response } from "./telegram/utils.ts";
 
 export type ContextState = {
   geolocationClient: GeolocationClient;
   weatherClient: WeatherClient;
+  telegramClient: TelegramClient;
   logger: Logger;
   user?: User;
   payload?: TelegramUpdate;
@@ -131,6 +134,7 @@ export async function handleErrors(ctx: OakContext, next: NxtFn) {
 export type AuthenticatedContext = {
   geolocationClient: GeolocationClient;
   weatherClient: WeatherClient;
+  telegramClient: TelegramClient;
   logger: Logger;
   user: User;
 };
@@ -148,6 +152,7 @@ export function authenticatedContext(ctx: ContextState): AuthenticatedContext {
     logger: ctx.logger,
     geolocationClient: ctx.geolocationClient,
     weatherClient: ctx.weatherClient,
+    telegramClient: ctx.telegramClient,
     user: ctx.user,
   };
 }

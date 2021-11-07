@@ -1,7 +1,8 @@
 import { AuthenticatedContext } from "../middleware.ts";
 import { findLocationById } from "../repository.ts";
 import { newRetrospectiveForecastMessage } from "../retrospective.ts";
-import { answerCallbackQuery, response, TelegramCallbackQuery, updateMessage } from "../telegram.ts";
+import { TelegramCallbackQuery } from "../telegram/types.ts";
+import { response } from "../telegram/utils.ts";
 
 const callbackDataKey = "forecast:";
 
@@ -34,8 +35,8 @@ async function handleForecastCallback(ctx: AuthenticatedContext, callback: Teleg
     name: location.name,
   });
 
-  await answerCallbackQuery(callback, `Fetching weather for ${location.name}`);
-  updateMessage(callback.message.message_id, response(ctx.user.telegramId, message));
+  await ctx.telegramClient.answerCallbackQuery(callback, `Fetching weather for ${location.name}`);
+  ctx.telegramClient.updateMessage(callback.message.message_id, response(ctx.user.telegramId, message));
 }
 
 export default {

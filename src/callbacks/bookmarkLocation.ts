@@ -1,13 +1,7 @@
 import { AuthenticatedContext } from "../middleware.ts";
 import { createUserLocation, findLocationByNameAndUser } from "../repository.ts";
-import {
-  answerCallbackQuery,
-  enableNotificationsInlineButton,
-  response,
-  TelegramCallbackQuery,
-  updateMessage,
-  withInlineKeyboard,
-} from "../telegram.ts";
+import { TelegramCallbackQuery } from "../telegram/types.ts";
+import { enableNotificationsInlineButton, response, withInlineKeyboard } from "../telegram/utils.ts";
 
 const callbackDataKey = "location:bookmark";
 
@@ -24,13 +18,13 @@ async function handleBookmarkLocationCallback(ctx: AuthenticatedContext, callbac
 
   const location = await findLocationByNameAndUser(city, ctx.user.id);
   if (location) {
-    await answerCallbackQuery(callback, "Location already bookmarked!");
+    await ctx.telegramClient.answerCallbackQuery(callback, "Location already bookmarked!");
     return;
   }
 
   const geolocation = await ctx.geolocationClient.findLocation(city);
   if (!geolocation) {
-    await answerCallbackQuery(callback, "Unable to geolocate location by name");
+    await ctx.telegramClient.answerCallbackQuery(callback, "Unable to geolocate location by name");
     return;
   }
 
@@ -52,8 +46,8 @@ async function handleBookmarkLocationCallback(ctx: AuthenticatedContext, callbac
     enableNotificationsInlineButton,
   ]]);
 
-  await updateMessage(originalMessageId, payload);
-  await answerCallbackQuery(callback, "Location bookmarked!");
+  await ctx.telegramClient.updateMessage(originalMessageId, payload);
+  await ctx.telegramClient.answerCallbackQuery(callback, "Location bookmarked!");
 }
 
 // complies with CallbackUsecase interface

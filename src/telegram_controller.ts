@@ -5,19 +5,16 @@ import forecastUsecase from "./callbacks/forecast.ts";
 import { buildForecastMessage, newForecastClient } from "./forecast.ts";
 import { AuthenticatedContext } from "./middleware.ts";
 import { listLocations } from "./repository.ts";
+import { findValid } from "./callbacks/callbackUsecase.ts";
+import { newRetrospectiveForecastMessage } from "./retrospective.ts";
+import { TelegramCallbackQuery, TelegramLocation, TelegramMessage } from "./telegram/types.ts";
 import {
-  answerCallbackQuery,
   parseCommand,
   response,
-  TelegramCallbackQuery,
-  TelegramLocation,
-  TelegramMessage,
   withForecastRequestInlineMenu,
   withLocationInlineMenu,
   withSettingsInlineMenu,
-} from "./telegram.ts";
-import { findValid } from "./callbacks/callbackUsecase.ts";
-import { newRetrospectiveForecastMessage } from "./retrospective.ts";
+} from "./telegram/utils.ts";
 
 export async function handleCallback(ctx: AuthenticatedContext, callback: TelegramCallbackQuery) {
   if (!callback.data) {
@@ -34,7 +31,7 @@ export async function handleCallback(ctx: AuthenticatedContext, callback: Telegr
   if (usecase) {
     await usecase.handle(ctx, callback);
   } else {
-    await answerCallbackQuery(callback, `received ${callback.data} callback`);
+    await ctx.telegramClient.answerCallbackQuery(callback, `received ${callback.data} callback`);
   }
 }
 
