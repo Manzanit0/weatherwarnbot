@@ -29,7 +29,7 @@ async function handleForecastCallback(ctx: AuthenticatedContext, callback: Teleg
     throw new Error("received forecast:now callback for a location that doesn't exist");
   }
 
-  const message = await newRetrospectiveForecastMessage(when, {
+  const message = await newRetrospectiveForecastMessage(ctx.weatherClient, when, {
     coordinates: location.coordinates,
     name: location.name,
   });

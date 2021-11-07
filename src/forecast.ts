@@ -1,4 +1,5 @@
 import * as api from "./openweathermap.ts";
+import { WeatherClient } from "./openweathermap.ts";
 
 export interface Forecast {
   location?: string;
@@ -21,17 +22,20 @@ export enum Day {
   IN_FIVE_DAYS,
 }
 
-export const fetchWeatherByName = (city: string, countryCode: string, when: Day = Day.TODAY) =>
-  api.requestDailyForecast(city, countryCode)
-    .then((x) => mapForecastData(x.list[when], city, countryCode.toUpperCase()));
+const fetchWeatherByCoordinatesWithClient = (c: WeatherClient) =>
+  (lat: number, lon: number, when: Day = Day.TODAY) =>
+    c.requestDailyForecast({ latitude: lat, longitude: lon })
+      .then((x) => mapForecastData(x.list[when], "", "N/a"));
 
-export const fetchWeatherByCoordinates = (lat: number, lon: number, when: Day = Day.TODAY) =>
-  api.requestDailyForecastByCoordinate({ latitude: lat, longitude: lon })
-    .then((x) => mapForecastData(x.list[when], "", "N/a"));
+const fetchYesterdayWeatherByCoordinatesWithClient = (c: WeatherClient) =>
+  (lat: number, lon: number) =>
+    c.requestHistoricForecast({ latitude: lat, longitude: lon })
+      .then(mapHistoricForecastData);
 
-export const fetchYesterdayWeatherByCoordinates = (lat: number, lon: number) =>
-  api.requestYesterdaysForecast({ latitude: lat, longitude: lon })
-    .then(mapHistoricForecastData);
+export const newForecastClient = (c: WeatherClient) => ({
+  fetchWeatherByCoordinates: fetchWeatherByCoordinatesWithClient(c),
+  fetchYesterdayWeatherByCoordinates: fetchYesterdayWeatherByCoordinatesWithClient(c),
+});
 
 export const buildRetrospectiveForecastMessage = (yday: Forecast, today: Forecast) => {
   const UNIX_DT_TRANSFORM_RATIO = 1000;

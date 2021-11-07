@@ -9,50 +9,60 @@ import {
   responseTimeHeader,
   trackUser,
 } from "./middleware.ts";
-import { PositionStackClient } from "./positionstack.ts";
+import { openWeatherMapClient, WeatherClient } from "./openweathermap.ts";
+import { GeolocationClient, PositionStackClient } from "./positionstack.ts";
 import { handleCallback, handleCommand, handleLocation, handleUnknownPayload } from "./telegram_controller.ts";
 
-const generalRouter = new Router<RouteParams, ContextState>();
-generalRouter.get("/", (ctx) => {
-  ctx.response.body = "Hello world!";
-});
+type Params = {
+  geolocation?: GeolocationClient;
+  weather?: WeatherClient;
+};
 
-const telegramRouter = new Router<RouteParams, ContextState>();
-telegramRouter.prefix("/api/telegram");
-telegramRouter.use(parseTelegramWebhookBody);
-telegramRouter.use(trackUser);
+export default async (params: Params = {}) => {
+  const generalRouter = new Router<RouteParams, ContextState>();
+  generalRouter.get("/", (ctx) => {
+    ctx.response.body = "Hello world!";
+  });
 
-telegramRouter.post("/", async (ctx) => {
-  const authCtx = authenticatedContext(ctx.state);
-  const json = ctx.state.payload!;
+  const telegramRouter = new Router<RouteParams, ContextState>();
+  telegramRouter.prefix("/api/telegram");
+  telegramRouter.use(parseTelegramWebhookBody);
+  telegramRouter.use(trackUser);
 
-  if (json.message) {
-    if (json.message.location) {
-      ctx.response.body = await handleLocation(authCtx, json.message.location);
-    } else if (json.message.text) {
-      ctx.response.body = await handleCommand(authCtx, json.message);
-    } else {
-      ctx.response.body = handleUnknownPayload(authCtx);
+  telegramRouter.post("/", async (ctx) => {
+    const authCtx = authenticatedContext(ctx.state);
+    const json = ctx.state.payload!;
+
+    if (json.message) {
+      if (json.message.location) {
+        ctx.response.body = await handleLocation(authCtx, json.message.location);
+      } else if (json.message.text) {
+        ctx.response.body = await handleCommand(authCtx, json.message);
+      } else {
+        ctx.response.body = handleUnknownPayload(authCtx);
+      }
+    } else if (json.callback_query) {
+      await handleCallback(authCtx, json.callback_query);
+      ctx.response.body = "";
     }
-  } else if (json.callback_query) {
-    await handleCallback(authCtx, json.callback_query);
-    ctx.response.body = "";
-  }
-});
+  });
 
-const dl = await getLogger();
-const pc = new PositionStackClient(dl);
-const app = new Application<ContextState>({
-  state: { logger: dl, geolocationClient: pc },
-  contextState: "prototype",
-});
+  const dl = await getLogger();
+  const pc = params.geolocation ?? new PositionStackClient(dl);
+  const wc = params.weather ?? openWeatherMapClient;
 
-app.use(handleErrors);
-app.use(responseTimeHeader);
-app.use(logRequest);
-app.use(generalRouter.routes());
-app.use(generalRouter.allowedMethods());
-app.use(telegramRouter.routes());
-app.use(telegramRouter.allowedMethods());
+  const app = new Application<ContextState>({
+    state: { logger: dl, geolocationClient: pc, weatherClient: wc },
+    contextState: "prototype",
+  });
 
-export default app;
+  app.use(handleErrors);
+  app.use(responseTimeHeader);
+  app.use(logRequest);
+  app.use(generalRouter.routes());
+  app.use(generalRouter.allowedMethods());
+  app.use(telegramRouter.routes());
+  app.use(telegramRouter.allowedMethods());
+
+  return app;
+};

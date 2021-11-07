@@ -2,7 +2,7 @@ import bookmarkLocationUsecase from "./callbacks/bookmarkLocation.ts";
 import settingsUsecase from "./callbacks/settings.ts";
 import forecastUsecase from "./callbacks/forecast.ts";
 
-import { buildForecastMessage, fetchWeatherByCoordinates } from "./forecast.ts";
+import { buildForecastMessage, newForecastClient } from "./forecast.ts";
 import { AuthenticatedContext } from "./middleware.ts";
 import { listLocations } from "./repository.ts";
 import {
@@ -39,7 +39,8 @@ export async function handleCallback(ctx: AuthenticatedContext, callback: Telegr
 }
 
 export async function handleLocation(ctx: AuthenticatedContext, location: TelegramLocation) {
-  const forecast = await fetchWeatherByCoordinates(
+  const c = newForecastClient(ctx.weatherClient);
+  const forecast = await c.fetchWeatherByCoordinates(
     location.latitude,
     location.longitude,
   );
@@ -102,7 +103,7 @@ Tambien puedes probar a enviarme una localización.
       throw new Error("Unable to geolocate town by name");
     }
 
-    const message = await newRetrospectiveForecastMessage(c.command, {
+    const message = await newRetrospectiveForecastMessage(ctx.weatherClient, c.command, {
       coordinates: { latitude: geolocation.latitude, longitude: geolocation.longitude },
       name: geolocation.name,
     });

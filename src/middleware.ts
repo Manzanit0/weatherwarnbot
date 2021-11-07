@@ -1,12 +1,14 @@
 import { Context } from "https://deno.land/x/oak@v9.0.0/context.ts";
 import { isHttpError, RouteParams, RouterContext, Status } from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import { Logger } from "./logger.ts";
+import { WeatherClient } from "./openweathermap.ts";
 import { GeolocationClient } from "./positionstack.ts";
 import { createUser, CreateUserParams, findUser, updateUser, UpdateUserParams, User } from "./repository.ts";
 import { getChatId, response, TelegramUpdate } from "./telegram.ts";
 
 export type ContextState = {
   geolocationClient: GeolocationClient;
+  weatherClient: WeatherClient;
   logger: Logger;
   user?: User;
   payload?: TelegramUpdate;
@@ -128,6 +130,7 @@ export async function handleErrors(ctx: OakContext, next: NxtFn) {
 
 export type AuthenticatedContext = {
   geolocationClient: GeolocationClient;
+  weatherClient: WeatherClient;
   logger: Logger;
   user: User;
 };
@@ -144,6 +147,7 @@ export function authenticatedContext(ctx: ContextState): AuthenticatedContext {
   return {
     logger: ctx.logger,
     geolocationClient: ctx.geolocationClient,
+    weatherClient: ctx.weatherClient,
     user: ctx.user,
   };
 }

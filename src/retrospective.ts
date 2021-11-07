@@ -1,10 +1,5 @@
-import {
-  buildRetrospectiveForecastMessage,
-  Day,
-  fetchWeatherByCoordinates,
-  fetchYesterdayWeatherByCoordinates,
-  Forecast,
-} from "./forecast.ts";
+import { buildRetrospectiveForecastMessage, Day, Forecast, newForecastClient } from "./forecast.ts";
+import { WeatherClient } from "./openweathermap.ts";
 import { Coordinates } from "./repository.ts";
 
 type MinimalLocation = {
@@ -14,17 +9,23 @@ type MinimalLocation = {
 
 type WhenString = "now" | "tomorrow";
 
-export const newRetrospectiveForecastMessage = async (when: WhenString, location: MinimalLocation) => {
+export const newRetrospectiveForecastMessage = async (
+  wc: WeatherClient,
+  when: WhenString,
+  location: MinimalLocation,
+) => {
+  const fc = newForecastClient(wc);
+
   let previous: Forecast, requested: Forecast;
   switch (when) {
     case "tomorrow": {
-      requested = await fetchWeatherByCoordinates(
+      requested = await fc.fetchWeatherByCoordinates(
         location.coordinates.latitude,
         location.coordinates.longitude,
         Day.TOMORROW,
       );
 
-      previous = await fetchWeatherByCoordinates(
+      previous = await fc.fetchWeatherByCoordinates(
         location.coordinates.latitude,
         location.coordinates.longitude,
         Day.TODAY,
@@ -33,13 +34,13 @@ export const newRetrospectiveForecastMessage = async (when: WhenString, location
       break;
     }
     case "now": {
-      requested = await fetchWeatherByCoordinates(
+      requested = await fc.fetchWeatherByCoordinates(
         location.coordinates.latitude,
         location.coordinates.longitude,
         Day.TODAY,
       );
 
-      previous = await fetchYesterdayWeatherByCoordinates(
+      previous = await fc.fetchYesterdayWeatherByCoordinates(
         location.coordinates.latitude,
         location.coordinates.longitude,
       );

@@ -116,15 +116,22 @@ export const requestDailyForecastByCoordinate = (coords: Coordinates) =>
     `/data/2.5/forecast/daily/?lat=${coords.latitude}&lon=${coords.longitude}&units=metric&lang=es`,
   );
 
-export const requestDailyForecast = (city: string, countryCode: string) =>
-  fetchOpenWeatherMap<DailyForecastResponse>(`/data/2.5/forecast/daily/?q=${city},${countryCode}&units=metric&lang=es`);
-
 const generateYesterdayTimestamp = () => Math.floor(new Date().setDate(new Date().getDate() - 1) / 1000);
 
 export const requestYesterdaysForecast = (coords: Coordinates) =>
   fetchOpenWeatherMap<HistoricalWeatherResponse>(
     `/data/2.5/onecall/timemachine?lat=${coords.latitude}&lon=${coords.longitude}&units=metric&lang=es&dt=${generateYesterdayTimestamp()}`,
   );
+
+export interface WeatherClient {
+  requestDailyForecast(coords: Coordinates): Promise<DailyForecastResponse>;
+  requestHistoricForecast(coords: Coordinates): Promise<HistoricalWeatherResponse>;
+}
+
+export const openWeatherMapClient = {
+  requestDailyForecast: requestDailyForecastByCoordinate,
+  requestHistoricForecast: requestYesterdaysForecast,
+};
 
 const fetchOpenWeatherMap = async <T>(endpoint: string) => {
   const key = Deno.env.get("OPENWEATHERMAP_API_KEY");
