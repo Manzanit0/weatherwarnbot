@@ -108,7 +108,7 @@ interface HistoricalHourlyWeather {
   "wind_deg": number;
   "wind_gust": number;
   "weather": WeatherDescription[];
-  "rain": unknown;
+  "rain"?: unknown;
 }
 
 export const requestDailyForecastByCoordinate = (coords: Coordinates) =>

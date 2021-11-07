@@ -1,14 +1,11 @@
 run:
 	deno run --allow-net --allow-env src/index.ts
 
-test:
-	deno test
-
-test-watch:
-	deno test --watch
+test: bootstrap
+	deno test -A --fail-fast
 
 bootstrap:
-	docker compose up --build
+	docker compose up --build -d
 
 bootstrap-down:
 	docker-compose -f docker-compose.yml down --volumes
