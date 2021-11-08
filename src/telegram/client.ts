@@ -3,7 +3,7 @@ import { ReplyMarkup, TelegramCallbackQuery } from "./types.ts";
 
 const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
 
-type MessagePayload = {
+export type MessagePayload = {
   chat_id: string;
   text: string;
   reply_markup?: ReplyMarkup;

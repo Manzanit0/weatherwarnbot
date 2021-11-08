@@ -1,18 +1,27 @@
 import { superdeno } from "https://deno.land/x/superdeno@4.6.1/mod.ts";
+import { spy } from "https://deno.land/x/mock@0.10.1/spy.ts";
+
 import createApp from "../src/application.ts";
+
 import { GeolocationClientMock } from "./mocks/GeolocationClientMock.ts";
 import { WeatherClientMock } from "./mocks/WeatherClientMock.ts";
+import { TelegramClientMock } from "./mocks/TelegramClientMock.ts";
 
 // TODO: Ideally we don't want to have these dependencies in the tests.
 import { newClient } from "../src/database.ts";
 import { createUser, createUserLocation } from "../src/repository.ts";
+import { assertEquals } from "https://deno.land/std@0.113.0/testing/asserts.ts";
 
-const app = await createApp({ geolocation: new GeolocationClientMock(), weather: new WeatherClientMock() });
+const defaultApp = await createApp({
+  geolocation: new GeolocationClientMock(),
+  weather: new WeatherClientMock(),
+  telegram: new TelegramClientMock(),
+});
 
 // Stop from printing logs in test runner by setting level to critical.
-app.state.logger.level = 50;
+defaultApp.state.logger.level = 50;
 
-const server = () => superdeno(app.handle.bind(app));
+const server = (app = defaultApp) => superdeno(app.handle.bind(app));
 
 // these values can be gathered in the docker-compose.yml
 // for the tests to pass, run `make bootstrap`.
@@ -197,6 +206,86 @@ Deno.test("callback upon pressing forecast location button for a location that d
     .send(body)
     .expect(200)
     .expect(expectedBody);
+});
+
+Deno.test("callback upon pressing forecast location button for a valid location", async () => {
+  await nukeDB();
+
+  const user = await createUser({ ...from, telegramId: from.id + "" });
+  const location = await createUserLocation({
+    user_id: user.id,
+    name: "Foo-land",
+    coordinates: { latitude: 123, longitude: 456 },
+  });
+
+  const messageId = 1878;
+  const body = JSON.stringify({
+    "update_id": 897804179,
+    "callback_query": {
+      "id": "9882431251951838",
+      "from": from,
+      "message": {
+        "message_id": messageId,
+        "from": botFrom,
+        "chat": chat,
+        "date": 1636238098,
+        "text": "Which location do you want to check the weather for?",
+        "reply_markup": {
+          "inline_keyboard": [
+            [
+              {
+                "text": "Madrid",
+                "callback_data": `forecast:tomorrow:${location.id}`,
+              },
+            ],
+          ],
+        },
+      },
+      "chat_instance": "-6407614445290219374",
+      "data": `forecast:tomorrow:${location.id}`,
+    },
+  });
+
+  const tgramMock = new TelegramClientMock();
+  const updateMessageMock = spy(tgramMock, "updateMessage");
+
+  const app = await createApp({
+    geolocation: new GeolocationClientMock(),
+    weather: new WeatherClientMock(),
+    telegram: tgramMock,
+  });
+
+  await server(app)
+    .post("/api/telegram")
+    .set("Content-Type", "application/json")
+    .send(body)
+    .expect(200)
+    .expect("");
+
+  const expectedText = `🚩 Foo-land
+- - - - - - - - - - - - - - - - - - - - - -
+📅 Sun Nov 07 2021 → Mon Nov 08 2021
+
+TLDR:
+🏷 cielo claro → cielo claro
+
+Temperaturas:
+📄 Suben un poco las temperaturas... pero no te dejes el abrigo en casa.
+❄️ 4.87°C → 6.69°C
+🔥 16.14ºC → 16.14ºC
+
+Viento:
+📄 Parece que va a haber una brisilla muy ligera, pero vamos, bien.
+💨 2.28 m/s → 2.38 m/s
+
+Humedad:
+💧 47%
+- - - - - - - - - - - - - - - - - - - - - -
+`;
+
+  assertEquals(updateMessageMock.calls.length, 1);
+  assertEquals(updateMessageMock.calls[0].args[0], messageId);
+  assertEquals(updateMessageMock.calls[0].args[1].text, expectedText);
 });
 
 // Canned data.
