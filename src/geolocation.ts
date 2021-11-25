@@ -70,6 +70,6 @@ const findLocation = (logger: Logger) =>
     return blob.data[0];
   };
 
-export const newGeolocationClient = (logger: Logger) => ({
+export const newGeolocationClient = (logger: Logger): GeolocationClient => ({
   findLocation: findLocation(logger),
 });
