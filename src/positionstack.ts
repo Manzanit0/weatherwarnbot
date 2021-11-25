@@ -12,46 +12,6 @@ type Location = {
   country: string;
 };
 
-class PositionStackClient {
-  logger: Logger;
-
-  constructor(l: Logger) {
-    this.logger = l;
-  }
-
-  async findLocation(query: string) {
-    const apiKey = Deno.env.get("POSITIONSTACK_API_KEY");
-    // The free tier does not support TLS encrypted connections.
-    const url = encodeURI(
-      `http://api.positionstack.com/v1/forward?access_key=${apiKey}&query=${query}`,
-    );
-
-    this.logger.info(`Sending request to ${url}`);
-    const res = await fetch(url);
-    if (!res.ok) {
-      this.logger.warning(`http status ${res.status}`);
-      throw new Error("failed to make request to positionstack API");
-    }
-
-    const blob = (await res.json()) as LocationRequestResponse;
-    if (!blob) {
-      this.logger.warning(`http status ${res.status}`);
-      throw new Error("unexpected response from positionstack");
-    }
-
-    if (!blob.data || blob.data.length < 1) {
-      this.logger.warning(
-        `positonstack query ${query} returned invalid payload or zero results`,
-      );
-
-      this.logger.debug(`positionstack response=${JSON.stringify(blob)}`);
-      return null;
-    }
-
-    return blob.data[0];
-  }
-}
-
 type LocationRequestResponse = {
   "data": LocationData[];
 };
@@ -77,4 +37,39 @@ type LocationData = {
   "map_url": string;
 };
 
-export const newGeolocationClient = (l: Logger): GeolocationClient => new PositionStackClient(l);
+const findLocation = (logger: Logger) =>
+  async (query: string) => {
+    const apiKey = Deno.env.get("POSITIONSTACK_API_KEY");
+    // The free tier does not support TLS encrypted connections.
+    const url = encodeURI(
+      `http://api.positionstack.com/v1/forward?access_key=${apiKey}&query=${query}`,
+    );
+
+    logger.info(`Sending request to ${url}`);
+    const res = await fetch(url);
+    if (!res.ok) {
+      logger.warning(`http status ${res.status}`);
+      throw new Error("failed to make request to positionstack API");
+    }
+
+    const blob = (await res.json()) as LocationRequestResponse;
+    if (!blob) {
+      logger.warning(`http status ${res.status}`);
+      throw new Error("unexpected response from positionstack");
+    }
+
+    if (!blob.data || blob.data.length < 1) {
+      logger.warning(
+        `positonstack query ${query} returned invalid payload or zero results`,
+      );
+
+      logger.debug(`positionstack response=${JSON.stringify(blob)}`);
+      return null;
+    }
+
+    return blob.data[0];
+  };
+
+export const newGeolocationClient = (logger: Logger) => ({
+  findLocation: findLocation(logger),
+});
