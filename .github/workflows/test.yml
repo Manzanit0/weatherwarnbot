@@ -1,0 +1,21 @@
+name: test
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build:
+    name: check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.14.2
+
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: Test
+        run: make test
