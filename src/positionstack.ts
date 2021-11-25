@@ -12,7 +12,7 @@ type Location = {
   country: string;
 };
 
-export class PositionStackClient {
+class PositionStackClient {
   logger: Logger;
 
   constructor(l: Logger) {
@@ -76,3 +76,5 @@ type LocationData = {
   "country_code": string;
   "map_url": string;
 };
+
+export const newGeolocationClient = (l: Logger): GeolocationClient => new PositionStackClient(l);

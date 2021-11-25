@@ -10,7 +10,7 @@ import {
   trackUser,
 } from "./middleware.ts";
 import { openWeatherMapClient, WeatherClient } from "./openweathermap.ts";
-import { GeolocationClient, PositionStackClient } from "./positionstack.ts";
+import { GeolocationClient, newGeolocationClient } from "./positionstack.ts";
 import { TelegramClient, telegramClient } from "./telegram/client.ts";
 import { handleCallback, handleCommand, handleLocation, handleUnknownPayload } from "./telegram_controller.ts";
 
@@ -50,7 +50,7 @@ export default async (params: Params = {}) => {
   });
 
   const dl = await getLogger();
-  const pc = params.geolocation ?? new PositionStackClient(dl);
+  const pc = params.geolocation ?? newGeolocationClient(dl);
   const wc = params.weather ?? openWeatherMapClient;
   const tc = params.telegram ?? telegramClient;
 
