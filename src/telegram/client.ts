@@ -2,6 +2,7 @@
 import { ReplyMarkup, TelegramCallbackQuery } from "./types.ts";
 
 const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
+const apiHost = `https://api.telegram.org/bot${botToken}`;
 
 export type MessagePayload = {
   chat_id: string;
@@ -10,7 +11,7 @@ export type MessagePayload = {
 };
 
 async function answerCallbackQuery(query: TelegramCallbackQuery, message: string) {
-  const req = await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+  const req = await fetch(`${apiHost}/answerCallbackQuery`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -27,7 +28,7 @@ async function answerCallbackQuery(query: TelegramCallbackQuery, message: string
 }
 
 async function sendComplexMessage(payload: MessagePayload) {
-  const req = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+  const req = await fetch(`${apiHost}/sendMessage`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -40,30 +41,17 @@ async function sendComplexMessage(payload: MessagePayload) {
   }
 }
 
+function sendMessage(chatId: string, message: string) {
+  return sendComplexMessage({ chat_id: chatId, text: message });
+}
+
 async function updateMessage(messageId: string, payload: MessagePayload) {
-  const req = await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
+  const req = await fetch(`${apiHost}/editMessageText`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ ...payload, message_id: messageId }),
-  });
-
-  if (!req.ok) {
-    throw new Error(`failed to to sendMessage: status=${req.status}`);
-  }
-}
-
-async function sendMessage(chatId: string, message: string) {
-  const req = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: message,
-    }),
   });
 
   if (!req.ok) {
@@ -79,8 +67,8 @@ export interface TelegramClient {
 }
 
 export const telegramClient: TelegramClient = {
-  answerCallbackQuery: answerCallbackQuery,
-  sendMessage: sendMessage,
-  sendComplexMessage: sendComplexMessage,
-  updateMessage: updateMessage,
+  answerCallbackQuery,
+  sendMessage,
+  sendComplexMessage,
+  updateMessage,
 };
