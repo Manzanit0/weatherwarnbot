@@ -2,14 +2,14 @@ import { getLogger } from "./logger.ts";
 
 const dl = await getLogger();
 
-interface WeatherDescription {
+type WeatherDescription = {
   "id": number;
   "main": string;
   "description": string;
   "icon": string;
-}
+};
 
-export interface DailyForecastResponse {
+export type DailyForecastResponse = {
   city: {
     id: number;
     name: string;
@@ -22,9 +22,9 @@ export interface DailyForecastResponse {
   message: number;
   cnt: number;
   list: DayForecast[];
-}
+};
 
-export interface DayForecast {
+export type DayForecast = {
   weather: WeatherDescription[];
   temp: {
     day: number;
@@ -50,33 +50,23 @@ export interface DayForecast {
   gust: number;
   clouds: number;
   pop: number;
-}
-
-export enum WeatherCondition {
-  Thunderstorm,
-  Drizzle,
-  Rain,
-  Snow,
-  Atmosphere,
-  Clear,
-  Clouds,
-}
+};
 
 export type Coordinates = {
   latitude: number;
   longitude: number;
 };
 
-export interface HistoricalWeatherResponse {
+export type HistoricalWeatherResponse = {
   "lat": number;
   "lon": number;
   "timezone": string;
   "timezone_offset": number;
   "current": HistoricalCurrentWeather;
   "hourly": HistoricalHourlyWeather[];
-}
+};
 
-interface HistoricalCurrentWeather {
+type HistoricalCurrentWeather = {
   "dt": number;
   "sunrise": number;
   "sunset": number;
@@ -92,9 +82,9 @@ interface HistoricalCurrentWeather {
   "wind_deg": number;
   "wind_gust": number;
   "weather": WeatherDescription[];
-}
+};
 
-interface HistoricalHourlyWeather {
+type HistoricalHourlyWeather = {
   "dt": number;
   "temp": number;
   "feels_like": number;
@@ -109,29 +99,19 @@ interface HistoricalHourlyWeather {
   "wind_gust": number;
   "weather": WeatherDescription[];
   "rain"?: unknown;
-}
+};
 
-export const requestDailyForecastByCoordinate = (coords: Coordinates) =>
+const requestDailyForecastByCoordinate = (coords: Coordinates) =>
   fetchOpenWeatherMap<DailyForecastResponse>(
     `/data/2.5/forecast/daily/?lat=${coords.latitude}&lon=${coords.longitude}&units=metric&lang=es`,
   );
 
 const generateYesterdayTimestamp = () => Math.floor(new Date().setDate(new Date().getDate() - 1) / 1000);
 
-export const requestYesterdaysForecast = (coords: Coordinates) =>
+const requestYesterdaysForecast = (coords: Coordinates) =>
   fetchOpenWeatherMap<HistoricalWeatherResponse>(
     `/data/2.5/onecall/timemachine?lat=${coords.latitude}&lon=${coords.longitude}&units=metric&lang=es&dt=${generateYesterdayTimestamp()}`,
   );
-
-export interface WeatherClient {
-  requestDailyForecast(coords: Coordinates): Promise<DailyForecastResponse>;
-  requestHistoricForecast(coords: Coordinates): Promise<HistoricalWeatherResponse>;
-}
-
-export const openWeatherMapClient = {
-  requestDailyForecast: requestDailyForecastByCoordinate,
-  requestHistoricForecast: requestYesterdaysForecast,
-};
 
 const fetchOpenWeatherMap = async <T>(endpoint: string) => {
   const key = Deno.env.get("OPENWEATHERMAP_API_KEY");
@@ -153,16 +133,33 @@ const fetchOpenWeatherMap = async <T>(endpoint: string) => {
   return blob;
 };
 
-export function conditionFromForecast(forecast: DayForecast): WeatherCondition | undefined {
-  return codeToWeatherCondition(forecast.weather[0].id);
+export interface WeatherClient {
+  requestDailyForecast(coords: Coordinates): Promise<DailyForecastResponse>;
+  requestHistoricForecast(coords: Coordinates): Promise<HistoricalWeatherResponse>;
 }
 
-export function conditionFromHistoric(forecast: HistoricalWeatherResponse): WeatherCondition | undefined {
-  return codeToWeatherCondition(forecast.current.weather[0].id);
+export const openWeatherMapClient = {
+  requestDailyForecast: requestDailyForecastByCoordinate,
+  requestHistoricForecast: requestYesterdaysForecast,
+};
+
+export enum WeatherCondition {
+  Thunderstorm,
+  Drizzle,
+  Rain,
+  Snow,
+  Atmosphere,
+  Clear,
+  Clouds,
 }
+
+export const conditionFromForecast = (forecast: DayForecast) => weatherConditionFromCode(forecast.weather[0].id);
+
+export const conditionFromHistoric = (forecast: HistoricalWeatherResponse) =>
+  weatherConditionFromCode(forecast.current.weather[0].id);
 
 // https://openweathermap.org/weather-conditions
-function codeToWeatherCondition(weatherCode: number): WeatherCondition | undefined {
+function weatherConditionFromCode(weatherCode: number): WeatherCondition | undefined {
   if (weatherCode >= 200 && weatherCode <= 299) {
     return WeatherCondition.Thunderstorm;
   } else if (weatherCode >= 300 && weatherCode <= 399) {
