@@ -2,7 +2,7 @@ import { Context } from "https://deno.land/x/oak@v9.0.0/context.ts";
 import { isHttpError, RouteParams, RouterContext, Status } from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import { Logger } from "./logger.ts";
 import { WeatherClient } from "./openweathermap.ts";
-import { GeolocationClient } from "./positionstack.ts";
+import { GeolocationClient } from "./geolocation.ts";
 import { createUser, CreateUserParams, findUser, updateUser, UpdateUserParams, User } from "./repository.ts";
 import { TelegramClient } from "./telegram/client.ts";
 import { TelegramUpdate } from "./telegram/types.ts";

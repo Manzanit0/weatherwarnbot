@@ -10,7 +10,7 @@ import {
   trackUser,
 } from "./middleware.ts";
 import { openWeatherMapClient, WeatherClient } from "./openweathermap.ts";
-import { GeolocationClient, newGeolocationClient } from "./positionstack.ts";
+import { GeolocationClient, newGeolocationClient } from "./geolocation.ts";
 import { TelegramClient, telegramClient } from "./telegram/client.ts";
 import { handleCallback, handleCommand, handleLocation, handleUnknownPayload } from "./telegram_controller.ts";
 
