@@ -1,6 +1,6 @@
 import { Context } from "https://deno.land/x/oak@v9.0.0/context.ts";
 import { isHttpError, RouteParams, RouterContext, Status } from "https://deno.land/x/oak@v9.0.0/mod.ts";
-import { Logger } from "./logger.ts";
+import { getLogger } from "./logger.ts";
 import { WeatherClient } from "./openweathermap.ts";
 import { GeolocationClient } from "./geolocation.ts";
 import { createUser, CreateUserParams, findUser, updateUser, UpdateUserParams, User } from "./repository.ts";
@@ -12,7 +12,6 @@ export type ContextState = {
   geolocationClient: GeolocationClient;
   weatherClient: WeatherClient;
   telegramClient: TelegramClient;
-  logger: Logger;
   user?: User;
   payload?: TelegramUpdate;
 };
@@ -38,7 +37,7 @@ export async function responseTimeHeader(ctx: OakContext, next: NxtFn) {
 export async function logRequest(ctx: OakContext, next: NxtFn) {
   await next();
 
-  const dl = ctx.state.logger;
+  const dl = getLogger();
   const rt = ctx.response.headers.get("X-Response-Time");
 
   // FIXME: rt is always null.
@@ -102,12 +101,13 @@ export async function trackUser(ctx: OakContext, next: NxtFn) {
   }
 
   ctx.state.user = user;
-  ctx.state.logger.info(`handling request for user with chatId:${chatId}`);
+  const dl = getLogger();
+  dl.info(`handling request for user with chatId:${chatId}`);
   await next();
 }
 
 export async function handleErrors(ctx: OakContext, next: NxtFn) {
-  const dl = ctx.state.logger;
+  const dl = getLogger();
 
   try {
     await next();
@@ -135,7 +135,6 @@ export type AuthenticatedContext = {
   geolocationClient: GeolocationClient;
   weatherClient: WeatherClient;
   telegramClient: TelegramClient;
-  logger: Logger;
   user: User;
 };
 
@@ -149,7 +148,6 @@ export function authenticatedContext(ctx: ContextState): AuthenticatedContext {
   }
 
   return {
-    logger: ctx.logger,
     geolocationClient: ctx.geolocationClient,
     weatherClient: ctx.weatherClient,
     telegramClient: ctx.telegramClient,

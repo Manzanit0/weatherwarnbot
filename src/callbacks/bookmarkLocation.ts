@@ -1,3 +1,4 @@
+import { getLogger } from "../logger.ts";
 import { AuthenticatedContext } from "../middleware.ts";
 import { createUserLocation, findLocationByNameAndUser } from "../repository.ts";
 import { TelegramCallbackQuery } from "../telegram/types.ts";
@@ -12,6 +13,8 @@ async function handleBookmarkLocationCallback(ctx: AuthenticatedContext, callbac
   if (!isBookmarkLocationCallback(callback)) {
     throw new Error("is not bookmark location payload");
   }
+
+  const logger = getLogger();
 
   const [_, locationName] = callback.data!.split(callbackDataKey + ":");
   const [city, _countryCode] = locationName.split(",");
@@ -28,7 +31,7 @@ async function handleBookmarkLocationCallback(ctx: AuthenticatedContext, callbac
     return;
   }
 
-  ctx.logger.info(`found location ${geolocation.name} through PositionStack`);
+  logger.info(`found location ${geolocation.name} through PositionStack`);
 
   const _location = await createUserLocation({
     user_id: ctx.user.id,

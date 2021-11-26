@@ -1,5 +1,4 @@
 import { Application, RouteParams, Router } from "https://deno.land/x/oak@v9.0.0/mod.ts";
-import { getLogger } from "./logger.ts";
 import {
   authenticatedContext,
   ContextState,
@@ -20,7 +19,7 @@ type Params = {
   telegram?: TelegramClient;
 };
 
-export default async (params: Params = {}) => {
+export default (params: Params = {}) => {
   const generalRouter = new Router<RouteParams, ContextState>();
   generalRouter.get("/", (ctx) => {
     ctx.response.body = "Hello world!";
@@ -49,13 +48,12 @@ export default async (params: Params = {}) => {
     }
   });
 
-  const dl = await getLogger();
-  const pc = params.geolocation ?? newGeolocationClient(dl);
+  const pc = params.geolocation ?? newGeolocationClient();
   const wc = params.weather ?? openWeatherMapClient;
   const tc = params.telegram ?? telegramClient;
 
   const app = new Application<ContextState>({
-    state: { logger: dl, geolocationClient: pc, weatherClient: wc, telegramClient: tc },
+    state: { geolocationClient: pc, weatherClient: wc, telegramClient: tc },
     contextState: "prototype",
   });
 

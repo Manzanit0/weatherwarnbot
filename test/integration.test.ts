@@ -11,6 +11,7 @@ import { TelegramClientMock } from "./mocks/TelegramClientMock.ts";
 import { newClient } from "../src/database.ts";
 import { createUser, createUserLocation } from "../src/repository.ts";
 import { assertEquals } from "https://deno.land/std@0.113.0/testing/asserts.ts";
+import { getLogger } from "../src/logger.ts";
 
 const defaultApp = await createApp({
   geolocation: new GeolocationClientMock(),
@@ -19,7 +20,7 @@ const defaultApp = await createApp({
 });
 
 // Stop from printing logs in test runner by setting level to critical.
-defaultApp.state.logger.level = 50;
+getLogger().level = 50;
 
 const server = (app = defaultApp) => superdeno(app.handle.bind(app));
 

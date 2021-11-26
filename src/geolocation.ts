@@ -1,4 +1,4 @@
-import { Logger } from "./logger.ts";
+import { getLogger } from "./logger.ts";
 
 export interface GeolocationClient {
   findLocation(query: string): Promise<Location | null>;
@@ -37,39 +37,39 @@ type LocationData = {
   "map_url": string;
 };
 
-const findLocation = (logger: Logger) =>
-  async (query: string) => {
-    const apiKey = Deno.env.get("POSITIONSTACK_API_KEY");
-    // The free tier does not support TLS encrypted connections.
-    const url = encodeURI(
-      `http://api.positionstack.com/v1/forward?access_key=${apiKey}&query=${query}`,
+const findLocation = async (query: string) => {
+  const logger = getLogger();
+  const apiKey = Deno.env.get("POSITIONSTACK_API_KEY");
+  // The free tier does not support TLS encrypted connections.
+  const url = encodeURI(
+    `http://api.positionstack.com/v1/forward?access_key=${apiKey}&query=${query}`,
+  );
+
+  logger.info(`Sending request to ${url}`);
+  const res = await fetch(url);
+  if (!res.ok) {
+    logger.warning(`http status ${res.status}`);
+    throw new Error("failed to make request to positionstack API");
+  }
+
+  const blob = (await res.json()) as LocationRequestResponse;
+  if (!blob) {
+    logger.warning(`http status ${res.status}`);
+    throw new Error("unexpected response from positionstack");
+  }
+
+  if (!blob.data || blob.data.length < 1) {
+    logger.warning(
+      `positonstack query ${query} returned invalid payload or zero results`,
     );
 
-    logger.info(`Sending request to ${url}`);
-    const res = await fetch(url);
-    if (!res.ok) {
-      logger.warning(`http status ${res.status}`);
-      throw new Error("failed to make request to positionstack API");
-    }
+    logger.debug(`positionstack response=${JSON.stringify(blob)}`);
+    return null;
+  }
 
-    const blob = (await res.json()) as LocationRequestResponse;
-    if (!blob) {
-      logger.warning(`http status ${res.status}`);
-      throw new Error("unexpected response from positionstack");
-    }
+  return blob.data[0];
+};
 
-    if (!blob.data || blob.data.length < 1) {
-      logger.warning(
-        `positonstack query ${query} returned invalid payload or zero results`,
-      );
-
-      logger.debug(`positionstack response=${JSON.stringify(blob)}`);
-      return null;
-    }
-
-    return blob.data[0];
-  };
-
-export const newGeolocationClient = (logger: Logger): GeolocationClient => ({
-  findLocation: findLocation(logger),
+export const newGeolocationClient = (): GeolocationClient => ({
+  findLocation,
 });

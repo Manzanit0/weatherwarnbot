@@ -1,3 +1,4 @@
+import { getLogger } from "../logger.ts";
 import { AuthenticatedContext } from "../middleware.ts";
 import { deleteLocationById, findLocationById, listLocations } from "../repository.ts";
 import { TelegramCallbackQuery } from "../telegram/types.ts";
@@ -126,7 +127,7 @@ const handleDeleteLocationCallback = async (
     await ctx.telegramClient.answerCallbackQuery(callback, "We've hit a 🐛, try again later.");
   } else {
     await ctx.telegramClient.answerCallbackQuery(callback, "Uh oh... something went weird.");
-    ctx.logger.info("More locations deleted than there should have been");
+    getLogger().info("More locations deleted than there should have been");
   }
 
   const originalMessageId = callback.message.message_id;

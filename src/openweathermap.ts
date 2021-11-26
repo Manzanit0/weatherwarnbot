@@ -1,7 +1,5 @@
 import { getLogger } from "./logger.ts";
 
-const dl = await getLogger();
-
 type WeatherDescription = {
   "id": number;
   "main": string;
@@ -114,19 +112,20 @@ const requestYesterdaysForecast = (coords: Coordinates) =>
   );
 
 const fetchOpenWeatherMap = async <T>(endpoint: string) => {
+  const logger = getLogger();
   const key = Deno.env.get("OPENWEATHERMAP_API_KEY");
   const url = `http://api.openweathermap.org${endpoint}&appid=${key}`;
 
-  dl.info(`Sending request to ${url}`);
+  logger.info(`Sending request to ${url}`);
   const res = await fetch(url);
   if (!res.ok) {
-    dl.warning(`http status ${res.status}`);
+    logger.warning(`http status ${res.status}`);
     throw new Error("failed to make request to openweathermap API");
   }
 
   const blob = (await res.json()) as T;
   if (!blob) {
-    dl.warning(`http status ${res.status}`);
+    logger.warning(`http status ${res.status}`);
     throw new Error("unexpected response from openweathermap");
   }
 
