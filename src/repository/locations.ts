@@ -9,6 +9,7 @@ export type UserLocation = {
   userId: string;
   name: string;
   coordinates: Coordinates;
+  notificationsEnabled: boolean;
 };
 
 type DbUserLocation = {
@@ -16,6 +17,7 @@ type DbUserLocation = {
   user_id: string;
   name?: string;
   coordinates: string;
+  notifications_enabled: boolean;
 };
 
 type CreateLocationParams = {
@@ -39,17 +41,20 @@ export const createUserLocation = (params: CreateLocationParams) => {
   return runQuery<DbUserLocation>(query).then(unwrapOneLocation);
 };
 
+const locationFields = "id, user_id, name, coordinates, notifications_enabled";
+
 export const findLocationByNameAndUser = (name: string, userId: string) =>
   runQuery<DbUserLocation>(
-    `SELECT id, user_id, name, coordinates FROM user_locations WHERE LOWER(name) = LOWER('${name}') AND user_id = '${userId}'`,
+    `SELECT ${locationFields} FROM user_locations WHERE LOWER(name) = LOWER('${name}') AND user_id = '${userId}'`,
   ).then(unwrapMaybeOneLocation);
 
 export const findLocationById = (id: string) =>
-  runQuery<DbUserLocation>(`SELECT id, user_id, name, coordinates FROM user_locations WHERE id = '${id}'`)
-    .then(unwrapMaybeOneLocation);
+  runQuery<DbUserLocation>(
+    `SELECT ${locationFields} FROM user_locations WHERE id = '${id}'`,
+  ).then(unwrapMaybeOneLocation);
 
 export const listLocations = (userId: string) =>
-  runQuery<DbUserLocation>(`SELECT id, user_id, name, coordinates FROM user_locations WHERE user_id = '${userId}'`)
+  runQuery<DbUserLocation>(`SELECT ${locationFields} FROM user_locations WHERE user_id = '${userId}'`)
     .then(unwrapLocations);
 
 export const deleteLocationById = (id: string) =>
@@ -60,6 +65,7 @@ const toUserLocation = (x: DbUserLocation) => ({
   id: x.id,
   userId: x.user_id,
   name: x.name,
+  notificationsEnabled: x.notifications_enabled,
   coordinates: decodeCoordinates(x.coordinates),
 } as UserLocation);
 

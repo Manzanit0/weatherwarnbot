@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE users ADD COLUMN notify_at TIME WITH TIME ZONE;
+ALTER TABLE user_locations ADD COLUMN notifications_enabled BOOLEAN DEFAULT FALSE;
+
+COMMIT;

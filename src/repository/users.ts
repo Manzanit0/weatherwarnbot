@@ -9,6 +9,7 @@ type DbUser = {
   "last_name"?: string;
   "language_code": string;
   "is_bot": boolean;
+  "notify_at": string;
 };
 
 export type User = {
@@ -19,6 +20,7 @@ export type User = {
   lastName?: string;
   languageCode: string;
   isBot: boolean;
+  notifyAt: string;
 };
 
 export const findUser = (telegramId: string) =>
@@ -56,6 +58,8 @@ export type UpdateUserParams = {
   "is_bot"?: boolean;
 };
 
+// FIXME: the fields should be added conditionally, otherwise
+// we'll be overriding existing values.
 export const updateUser = (params: UpdateUserParams) =>
   runQuery<DbUser>(`UPDATE users SET
       username='${params.username}',
@@ -75,6 +79,7 @@ const toUser = (x: DbUser) => ({
   lastName: x.last_name,
   languageCode: x.language_code,
   isBot: x.is_bot,
+  notifyAt: x.notify_at,
 } as User);
 
 const unwrapMaybeOneUser: () => User | null = R.curry(unwrapOne)(toUser);
