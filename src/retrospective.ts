@@ -1,4 +1,5 @@
-import { buildRetrospectiveForecastMessage, Day, Forecast, newForecastClient } from "./forecast.ts";
+import { Day, Forecast, newForecastClient } from "./forecast.ts";
+import { retrospectiveMessage } from "./messages.ts";
 import { WeatherClient } from "./openweathermap.ts";
 import { Coordinates } from "./repository.ts";
 
@@ -52,7 +53,7 @@ export const newRetrospectiveForecastMessage = async (
       throw new Error(":_)");
   }
 
-  return buildRetrospectiveForecastMessage(
+  return retrospectiveMessage(
     { ...previous, location: location.name },
     { ...requested, location: location.name },
   );

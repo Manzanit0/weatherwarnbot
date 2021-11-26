@@ -2,7 +2,7 @@ import bookmarkLocationUsecase from "./callbacks/bookmarkLocation.ts";
 import settingsUsecase from "./callbacks/settings.ts";
 import forecastUsecase from "./callbacks/forecast.ts";
 
-import { buildForecastMessage, newForecastClient } from "./forecast.ts";
+import { newForecastClient } from "./forecast.ts";
 import { AuthenticatedContext } from "./middleware.ts";
 import { listLocations } from "./repository.ts";
 import { findValid } from "./callbacks/callbackUsecase.ts";
@@ -15,6 +15,7 @@ import {
   withLocationInlineMenu,
   withSettingsInlineMenu,
 } from "./telegram/utils.ts";
+import { simpleMessage } from "./messages.ts";
 
 export async function handleCallback(ctx: AuthenticatedContext, callback: TelegramCallbackQuery) {
   if (!callback.data) {
@@ -42,7 +43,7 @@ export async function handleLocation(ctx: AuthenticatedContext, location: Telegr
     location.longitude,
   );
 
-  const message = buildForecastMessage(forecast);
+  const message = simpleMessage(forecast);
   const chatId = ctx.user.telegramId;
   return response(chatId, message);
 }
