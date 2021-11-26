@@ -1,5 +1,5 @@
 import { AuthenticatedContext } from "../middleware.ts";
-import { findLocationById } from "../repository.ts";
+import { findLocationById } from "../repository/locations.ts";
 import { newRetrospectiveForecastMessage } from "../retrospective.ts";
 import { TelegramCallbackQuery } from "../telegram/types.ts";
 import { response } from "../telegram/utils.ts";

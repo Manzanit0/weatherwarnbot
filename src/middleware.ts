@@ -3,7 +3,7 @@ import { isHttpError, RouteParams, RouterContext, Status } from "https://deno.la
 import { getLogger } from "./logger.ts";
 import { WeatherClient } from "./openweathermap.ts";
 import { GeolocationClient } from "./geolocation.ts";
-import { createUser, CreateUserParams, findUser, updateUser, UpdateUserParams, User } from "./repository.ts";
+import { createUser, CreateUserParams, findUser, updateUser, UpdateUserParams, User } from "./repository/users.ts";
 import { TelegramClient } from "./telegram/client.ts";
 import { TelegramUpdate } from "./telegram/types.ts";
 import { getChatId, response } from "./telegram/utils.ts";

@@ -8,8 +8,9 @@ import { WeatherClientMock } from "./mocks/WeatherClientMock.ts";
 import { TelegramClientMock } from "./mocks/TelegramClientMock.ts";
 
 // TODO: Ideally we don't want to have these dependencies in the tests.
-import { newClient } from "../src/database.ts";
-import { createUser, createUserLocation } from "../src/repository.ts";
+import { newClient } from "../src/repository/database.ts";
+import { createUserLocation } from "../src/repository/locations.ts";
+import { createUser } from "../src/repository/users.ts";
 import { assertEquals } from "https://deno.land/std@0.113.0/testing/asserts.ts";
 import { getLogger } from "../src/logger.ts";
 

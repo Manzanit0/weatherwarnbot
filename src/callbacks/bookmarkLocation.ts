@@ -1,6 +1,6 @@
 import { getLogger } from "../logger.ts";
 import { AuthenticatedContext } from "../middleware.ts";
-import { createUserLocation, findLocationByNameAndUser } from "../repository.ts";
+import { createUserLocation, findLocationByNameAndUser } from "../repository/locations.ts";
 import { TelegramCallbackQuery } from "../telegram/types.ts";
 import { enableNotificationsInlineButton, response, withInlineKeyboard } from "../telegram/utils.ts";
 

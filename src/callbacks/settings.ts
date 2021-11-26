@@ -1,6 +1,6 @@
 import { getLogger } from "../logger.ts";
 import { AuthenticatedContext } from "../middleware.ts";
-import { deleteLocationById, findLocationById, listLocations } from "../repository.ts";
+import { deleteLocationById, findLocationById, listLocations } from "../repository/locations.ts";
 import { TelegramCallbackQuery } from "../telegram/types.ts";
 import {
   response,

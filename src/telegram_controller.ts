@@ -4,7 +4,7 @@ import forecastUsecase from "./callbacks/forecast.ts";
 
 import { newForecastClient } from "./forecast.ts";
 import { AuthenticatedContext } from "./middleware.ts";
-import { listLocations } from "./repository.ts";
+import { listLocations } from "./repository/locations.ts";
 import { findValid } from "./callbacks/callbackUsecase.ts";
 import { newRetrospectiveForecastMessage } from "./retrospective.ts";
 import { TelegramCallbackQuery, TelegramLocation, TelegramMessage } from "./telegram/types.ts";

@@ -1,76 +1,6 @@
 // deno-lint-ignore-file camelcase
 import * as R from "https://raw.githubusercontent.com/selfrefactor/rambda/master/dist/rambda.esm.js";
-import { runQuery, unwrapAffectedRecordCount, unwrapMany, unwrapOne } from "./database.ts";
-
-// User Repository
-
-type DbUser = {
-  "id": string;
-  "telegram_chat_id": string;
-  "username"?: string;
-  "first_name"?: string;
-  "last_name"?: string;
-  "language_code": string;
-  "is_bot": boolean;
-};
-
-export type User = {
-  id: string;
-  telegramId: string;
-  username?: string;
-  firstName?: string;
-  lastName?: string;
-  languageCode: string;
-  isBot: boolean;
-};
-
-export const findUser = (telegramId: string) =>
-  runQuery<DbUser>(`SELECT id, telegram_chat_id FROM users WHERE telegram_chat_id = '${telegramId}'`)
-    .then(unwrapMaybeOneUser);
-
-export type CreateUserParams = {
-  telegramId: string;
-  username?: string;
-  first_name?: string;
-  last_name?: string;
-  language_code?: string;
-  is_bot?: boolean;
-};
-
-export const createUser = (params: CreateUserParams) =>
-  runQuery<DbUser>(`INSERT INTO users
-    (telegram_chat_id, username, first_name, last_name, language_code, is_bot)
-    VALUES (
-      '${params.telegramId}',
-      '${params.username}',
-      '${params.first_name}',
-      '${params.last_name}',
-      '${params.language_code ?? "en"}',
-      '${params.is_bot ?? false}')
-    RETURNING *`)
-    .then(unwrapOneUser);
-
-export type UpdateUserParams = {
-  telegramId: string;
-  username?: string;
-  first_name?: string;
-  last_name?: string;
-  language_code?: string;
-  is_bot?: boolean;
-};
-
-export const updateUser = (params: UpdateUserParams) =>
-  runQuery<DbUser>(`UPDATE users SET
-      username='${params.username}',
-      first_name='${params.first_name}',
-      last_name='${params.last_name}',
-      language_code='${params.language_code ?? "en"}',
-      is_bot='${params.is_bot ?? false}'
-    WHERE telegram_chat_id='${params.telegramId}'
-    RETURNING *`)
-    .then(unwrapOneUser);
-
-// Location Repository
+import { assertOne, runQuery, unwrapAffectedRecordCount, unwrapMany, unwrapOne } from "./database.ts";
 
 export type Coordinates = { latitude: number; longitude: number };
 
@@ -126,6 +56,13 @@ export const deleteLocationById = (id: string) =>
   runQuery<DbUserLocation>(`DELETE FROM user_locations WHERE id = '${id}'`)
     .then(unwrapAffectedRecordCount);
 
+const toUserLocation = (x: DbUserLocation) => ({
+  id: x.id,
+  userId: x.user_id,
+  name: x.name,
+  coordinates: decodeCoordinates(x.coordinates),
+} as UserLocation);
+
 const decodeCoordinates = (coordinates: string) => {
   const result = coordinates.match(
     /^\((?<latitude>[\.\-\d]*),(?<longitude>[\.\-\d]*)\)$/,
@@ -146,35 +83,8 @@ const decodeCoordinates = (coordinates: string) => {
 
 const encodeCoordinates = (coordinates: Coordinates) => `(${coordinates.latitude}, ${coordinates.longitude})`;
 
-const toUserLocation = (x: DbUserLocation) => ({
-  id: x.id,
-  userId: x.user_id,
-  name: x.name,
-  coordinates: decodeCoordinates(x.coordinates),
-} as UserLocation);
-
-const toUser = (x: DbUser) => ({
-  id: x.id,
-  username: x.username,
-  telegramId: x.telegram_chat_id,
-  firstName: x.first_name,
-  lastName: x.last_name,
-  languageCode: x.language_code,
-  isBot: x.is_bot,
-} as User);
-
-const assertOne = <T>(x: T | null | undefined) => x || throwError("a record was expected, got null | undefined");
-
-const unwrapMaybeOneUser: () => User | null = R.curry(unwrapOne)(toUser);
-
-const unwrapOneUser: () => User = R.compose(assertOne, unwrapMaybeOneUser);
-
 const unwrapLocations: () => UserLocation[] = R.curry(unwrapMany)(toUserLocation);
 
 const unwrapMaybeOneLocation: () => UserLocation | null = R.curry(unwrapOne)(toUserLocation);
 
 const unwrapOneLocation: () => UserLocation = R.compose(assertOne, unwrapMaybeOneLocation);
-
-const throwError = (m: string) => {
-  throw new Error(m);
-};

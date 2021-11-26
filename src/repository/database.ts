@@ -47,3 +47,9 @@ export function unwrapRaw<T>(r: QueryObjectResult<T>): T[] {
 export function unwrapAffectedRecordCount<T>(r: QueryObjectResult<T>): number {
   return r.rowCount ?? -1;
 }
+
+export const assertOne = <T>(x: T | null | undefined) => x || throwError("a record was expected, got null | undefined");
+
+const throwError = (m: string) => {
+  throw new Error(m);
+};

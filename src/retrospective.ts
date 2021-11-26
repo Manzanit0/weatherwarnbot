@@ -1,7 +1,7 @@
 import { Day, Forecast, newForecastClient } from "./forecast.ts";
 import { retrospectiveMessage } from "./messages.ts";
 import { WeatherClient } from "./openweathermap.ts";
-import { Coordinates } from "./repository.ts";
+import { Coordinates } from "./repository/locations.ts";
 
 type MinimalLocation = {
   coordinates: Coordinates;
