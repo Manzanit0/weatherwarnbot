@@ -70,6 +70,6 @@ const findLocation = async (query: string) => {
   return blob.data[0];
 };
 
-export const newGeolocationClient = (): GeolocationClient => ({
+export const geolocationClient: GeolocationClient = {
   findLocation,
-});
+};

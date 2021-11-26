@@ -9,7 +9,7 @@ import {
   trackUser,
 } from "./middleware.ts";
 import { openWeatherMapClient, WeatherClient } from "./openweathermap.ts";
-import { GeolocationClient, newGeolocationClient } from "./geolocation.ts";
+import { GeolocationClient, geolocationClient } from "./geolocation.ts";
 import { TelegramClient, telegramClient } from "./telegram/client.ts";
 import { handleCallback, handleCommand, handleLocation, handleUnknownPayload } from "./telegram_controller.ts";
 
@@ -48,7 +48,7 @@ export default (params: Params = {}) => {
     }
   });
 
-  const pc = params.geolocation ?? newGeolocationClient();
+  const pc = params.geolocation ?? geolocationClient;
   const wc = params.weather ?? openWeatherMapClient;
   const tc = params.telegram ?? telegramClient;
 
