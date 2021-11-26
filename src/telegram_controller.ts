@@ -4,15 +4,17 @@ import forecastUsecase from "./callbacks/forecast.ts";
 
 import { newForecastClient } from "./forecast.ts";
 import { AuthenticatedContext } from "./middleware.ts";
-import { listLocations } from "./repository/locations.ts";
+import { findLocationByNameAndUser, listLocations } from "./repository/locations.ts";
 import { findValid } from "./callbacks/callbackUsecase.ts";
 import { newRetrospectiveForecastMessage } from "./retrospective.ts";
-import { TelegramCallbackQuery, TelegramLocation, TelegramMessage } from "./telegram/types.ts";
+import { InlineKeyBoard, TelegramCallbackQuery, TelegramLocation, TelegramMessage } from "./telegram/types.ts";
 import {
+  bookmarkLocationInlineButton,
+  enableNotificationsInlineButton,
   parseCommand,
   response,
   withForecastRequestInlineMenu,
-  withLocationInlineMenu,
+  withInlineKeyboard,
   withSettingsInlineMenu,
 } from "./telegram/utils.ts";
 import { simpleMessage } from "./messages.ts";
@@ -106,7 +108,16 @@ Tambien puedes probar a enviarme una localización.
       name: geolocation.name,
     });
 
-    return withLocationInlineMenu(response(chatId, message), `${c.city},${c.country}`);
+    const keyboard: InlineKeyBoard = [];
+    const location = await findLocationByNameAndUser(c.city!, ctx.user.id);
+
+    if (location && !location.notificationsEnabled) {
+      keyboard.push([enableNotificationsInlineButton]);
+    } else if (!location) {
+      keyboard.push([bookmarkLocationInlineButton(`${c.city},${c.country}`)], [enableNotificationsInlineButton]);
+    }
+
+    return withInlineKeyboard(response(chatId, message), keyboard);
   } else {
     return response(
       chatId,
