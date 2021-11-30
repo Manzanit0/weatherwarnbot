@@ -1,4 +1,4 @@
-name: test
+name: ci
 
 on:
   push:
@@ -19,6 +19,7 @@ jobs:
 
       - name: Test
         run: make test
+
   deploy:
     name: deploy
     runs-on: ubuntu-latest

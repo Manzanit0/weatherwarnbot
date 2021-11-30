@@ -1,6 +1,6 @@
 # WeatherWarnBot
 
-[![test](https://github.com/Manzanit0/weatherwarnbot/actions/workflows/test.yml/badge.svg)](https://github.com/Manzanit0/weatherwarnbot/actions/workflows/test.yml)
+[![CI](https://github.com/Manzanit0/weatherwarnbot/actions/workflows/ci.yml/badge.svg)](https://github.com/Manzanit0/weatherwarnbot/actions/workflows/ci.yml)
 
 Tis basically a bot in Telegram for myself to check the weather. Work in Progress.
 
