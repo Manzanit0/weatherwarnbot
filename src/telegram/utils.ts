@@ -130,16 +130,6 @@ export function withInlineKeyboard(res: TelegramResponseBody, keyboard: InlineKe
   };
 }
 
-export function withLocationsKeyboard(res: TelegramResponseBody, locations: string[]): TelegramResponseBody {
-  return {
-    ...res,
-    reply_markup: {
-      one_time_keyboard: true,
-      keyboard: [locations],
-    },
-  };
-}
-
 type TelegramWeatherRequestCommand = "now" | "tomorrow";
 
 type TelegramCommand = {
