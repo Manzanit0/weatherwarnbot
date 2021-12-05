@@ -1,6 +1,6 @@
 import { getLogger } from "../logger.ts";
 import { AuthenticatedContext } from "../middleware.ts";
-import { deleteLocationById, findLocationById, listLocations } from "../repository/locations.ts";
+import { deleteLocationById, findLocationById, listLocations, UserLocation } from "../repository/locations.ts";
 import { TelegramCallbackQuery } from "../telegram/types.ts";
 import {
   response,
@@ -137,7 +137,9 @@ const handleDeleteLocationCallback = async (
 
 const listLocationsPayload = async (ctx: AuthenticatedContext) => {
   const locations = await listLocations(ctx.user.id);
-  const locationTuples = locations.map((x) => [`settings:locations:${x.id}`, x.name] as [string, string]);
+  const locationTuples = locations.map((x) =>
+    [`settings:locations:${x.id}`, `${x.name} ${notificationIcon(x)}`] as [string, string]
+  );
   return withBackToSettingsInlineButton(
     withLocationsSettingsKeyboard(
       response(ctx.user.telegramId, "Which of these locations do you want to edit?"),
@@ -145,6 +147,8 @@ const listLocationsPayload = async (ctx: AuthenticatedContext) => {
     ),
   );
 };
+
+const notificationIcon = (x: UserLocation) => x.notificationsEnabled ? "🔔" : "";
 
 export default {
   handle: handleSettingsCallback,
