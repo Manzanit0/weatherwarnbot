@@ -1,5 +1,5 @@
 // deno-lint-ignore-file camelcase
-import { InlineKeyBoard, TelegramResponseBody, TelegramUpdate } from "./types.ts";
+import { InlineKeyBoard, InlineKeyBoardElement, TelegramResponseBody, TelegramUpdate } from "./types.ts";
 
 export function getChatId(update: TelegramUpdate) {
   if (update.callback_query) {
@@ -29,17 +29,17 @@ export function withLocationInlineMenu(res: TelegramResponseBody, locationName: 
           bookmarkLocationInlineButton(locationName),
         ],
         [
-          enableNotificationsInlineButton,
+          enableNotificationsInlineButton(locationName),
         ],
       ],
     },
   };
 }
 
-export const enableNotificationsInlineButton = {
+export const enableNotificationsInlineButton = (locationIdOrName: string) => ({
   text: "📬 Enable notifications",
-  callback_data: "location:enable_notification",
-};
+  callback_data: `location:notification_on:${locationIdOrName}`,
+});
 
 export const bookmarkLocationInlineButton = (locationName: string) => ({
   text: "📌 Bookmark Location",
@@ -82,7 +82,7 @@ export function withForecastRequestInlineMenu(
     reply_markup: {
       inline_keyboard: locations.map((
         x,
-      ) => ([{ text: x[1], callback_data: `forecast:${command}:${x[0]}` }])),
+      ) => ([validateKeyboardElement({ text: x[1], callback_data: `forecast:${command}:${x[0]}` })])),
     },
   };
 }
@@ -95,7 +95,7 @@ export function withLocationsSettingsKeyboard(
     ...res,
     reply_markup: {
       one_time_keyboard: true,
-      inline_keyboard: locations.map((x) => ([{ text: x[1], callback_data: x[0] }])),
+      inline_keyboard: locations.map((x) => ([validateKeyboardElement({ text: x[1], callback_data: x[0] })])),
     },
   };
 }
@@ -125,7 +125,7 @@ export function withInlineKeyboard(res: TelegramResponseBody, keyboard: InlineKe
     ...res,
     reply_markup: {
       ...res.reply_markup,
-      inline_keyboard: keyboard,
+      inline_keyboard: validateKeyboard(keyboard),
     },
   };
 }
@@ -165,3 +165,14 @@ export function parseCommand(command: string): TelegramCommand {
     throw new Error("unknown command");
   }
 }
+
+const validateKeyboard = (x: InlineKeyBoard) => x.map((x) => x.map(validateKeyboardElement));
+
+const validateKeyboardElement = (x: InlineKeyBoardElement) => {
+  const array = new TextEncoder().encode(x.callback_data);
+  if (array.length > 64) {
+    throw new Error(`InlineKeyBoardElement cannot have more than 64 bytes in the callback_data: ${x.callback_data}`);
+  }
+
+  return x;
+};

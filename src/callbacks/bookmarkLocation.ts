@@ -19,7 +19,7 @@ async function handleBookmarkLocationCallback(ctx: AuthenticatedContext, callbac
   const [_, locationName] = callback.data!.split(callbackDataKey + ":");
   const [city, _countryCode] = locationName.split(",");
 
-  const location = await findLocationByNameAndUser(city, ctx.user.id);
+  let location = await findLocationByNameAndUser(city, ctx.user.id);
   if (location) {
     await ctx.telegramClient.answerCallbackQuery(callback, "Location already bookmarked!");
     return;
@@ -33,7 +33,7 @@ async function handleBookmarkLocationCallback(ctx: AuthenticatedContext, callbac
 
   logger.info(`found location ${geolocation.name} through PositionStack`);
 
-  const _location = await createUserLocation({
+  location = await createUserLocation({
     user_id: ctx.user.id,
     name: geolocation.name,
     coordinates: {
@@ -46,7 +46,7 @@ async function handleBookmarkLocationCallback(ctx: AuthenticatedContext, callbac
   const originalMessageId = callback.message.message_id;
   const originalMessageText = callback.message.text;
   const payload = withInlineKeyboard(response(ctx.user.telegramId, originalMessageText), [[
-    enableNotificationsInlineButton,
+    enableNotificationsInlineButton(location.id),
   ]]);
 
   await ctx.telegramClient.updateMessage(originalMessageId, payload);

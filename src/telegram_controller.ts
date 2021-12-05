@@ -108,13 +108,19 @@ Tambien puedes probar a enviarme una localización.
       name: geolocation.name,
     });
 
-    const keyboard: InlineKeyBoard = [];
+    let keyboard: InlineKeyBoard;
     const location = await findLocationByNameAndUser(c.city!, ctx.user.id);
 
-    if (location && !location.notificationsEnabled) {
-      keyboard.push([enableNotificationsInlineButton]);
+    if (location && location.notificationsEnabled === false) {
+      // If it's a bookmarked location with disabled notifications, allow the user to enable them
+      keyboard = [[enableNotificationsInlineButton(location.id)]];
     } else if (!location) {
-      keyboard.push([bookmarkLocationInlineButton(`${c.city},${c.country}`)], [enableNotificationsInlineButton]);
+      // If it's not bookmarked, allow to either bookmark or enable (which also bookmarks).
+      const locationName = `${c.city},${c.country}`;
+      keyboard = [[bookmarkLocationInlineButton(locationName)], [enableNotificationsInlineButton(locationName)]];
+    } else {
+      // If it's bookmarked and notifications are enabled, no keyboard is sent.
+      keyboard = [];
     }
 
     return withInlineKeyboard(response(chatId, message), keyboard);

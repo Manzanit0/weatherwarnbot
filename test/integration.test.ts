@@ -165,6 +165,88 @@ Deno.test("tomorrow command with city/country params", async () => {
     .expect(200);
 });
 
+Deno.test("tomorrow command with city/country params for saved location", async () => {
+  await nukeDB();
+
+  const user = await createUser({ ...from, telegramId: from.id + "" });
+  const location = await createUserLocation({
+    user_id: user.id,
+    name: "Botany Bay",
+    coordinates: { latitude: 123, longitude: 456 },
+  });
+
+  const body = JSON.stringify(
+    {
+      "update_id": 897804178,
+      "message": {
+        "message_id": 1877,
+        "from": from,
+        "chat": chat,
+        "date": 1636238095,
+        "text": "/tomorrow botany bay, au",
+        "entities": [
+          {
+            "offset": 0,
+            "length": 9,
+            "type": "bot_command",
+          },
+        ],
+      },
+    },
+  );
+
+  await server()
+    .post("/api/telegram")
+    .set("Content-Type", "application/json")
+    .send(body)
+    .expect(200);
+
+  const app = await createApp({
+    geolocation: new GeolocationClientMock(),
+    weather: new WeatherClientMock(),
+    telegram: new TelegramClientMock(),
+  });
+
+  const expectedText = `🚩 Botany Bay
+- - - - - - - - - - - - - - - - - - - - - -
+📅 Sun Nov 07 2021 → Mon Nov 08 2021
+
+TLDR:
+🏷 cielo claro → cielo claro
+
+Temperaturas:
+📄 Suben un poco las temperaturas... pero no te dejes el abrigo en casa.
+❄️ 4.87°C → 6.69°C
+🔥 16.14ºC → 16.14ºC
+
+Viento:
+📄 Parece que va a haber una brisilla muy ligera, pero vamos, bien.
+💨 2.28 m/s → 2.38 m/s
+
+Humedad:
+💧 47%
+- - - - - - - - - - - - - - - - - - - - - -
+`;
+
+  // const expectedKeyboard = ;
+  await server(app)
+    .post("/api/telegram")
+    .set("Content-Type", "application/json")
+    .send(body)
+    .expect(200)
+    .expect({
+      method: "sendMessage",
+      chat_id: chat.id + "",
+      text: expectedText,
+      parse_mode: "markdown",
+      reply_markup: {
+        inline_keyboard: [
+          [{ "text": "📬 Enable notifications", "callback_data": `location:notification_on:${location.id}` }],
+        ],
+      },
+    });
+});
+
 Deno.test("callback upon pressing forecast location button for a location that doesn't exist", async () => {
   const body = JSON.stringify(
     {
@@ -288,6 +370,7 @@ Humedad:
   assertEquals(updateMessageMock.calls.length, 1);
   assertEquals(updateMessageMock.calls[0].args[0], messageId);
   assertEquals(updateMessageMock.calls[0].args[1].text, expectedText);
+  assertEquals(updateMessageMock.calls[0].args[1].reply_markup, undefined);
 });
 
 // Canned data.
