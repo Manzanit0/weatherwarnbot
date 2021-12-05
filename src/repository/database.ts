@@ -21,7 +21,7 @@ export async function runQuery<T>(query: string, ...args: string[]) {
     const result = await client.queryObject<T>(query, ...args);
     client.end();
 
-    log.debug(`QUERY OK ${sanitiseQuery(query)}`);
+    log.debug(`QUERY OK ${sanitiseQuery(query)}, ROW COUNT ${result.rowCount}`);
 
     return result;
   } catch (error) {
