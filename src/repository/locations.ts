@@ -61,6 +61,10 @@ export const deleteLocationById = (id: string) =>
   runQuery<DbUserLocation>(`DELETE FROM user_locations WHERE id = '${id}'`)
     .then(unwrapAffectedRecordCount);
 
+export const enableNotifications = (id: string) =>
+  runQuery<DbUserLocation>(`UPDATE user_locations set notifications_enabled=true WHERE id = '${id}'`)
+    .then(unwrapAffectedRecordCount);
+
 const toUserLocation = (x: DbUserLocation) => ({
   id: x.id,
   userId: x.user_id,
