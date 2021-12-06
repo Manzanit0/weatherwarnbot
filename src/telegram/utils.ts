@@ -37,8 +37,13 @@ export function withLocationInlineMenu(res: TelegramResponseBody, locationName: 
 }
 
 export const enableNotificationsInlineButton = (locationIdOrName: string) => ({
-  text: "📬 Enable notifications",
+  text: "🔔 Enable notifications",
   callback_data: `location:notification_on:${locationIdOrName}`,
+});
+
+export const disableNotificationsInlineButton = (locationIdOrName: string) => ({
+  text: "🔕 Disable notifications",
+  callback_data: `location:notification_off:${locationIdOrName}`,
 });
 
 export const bookmarkLocationInlineButton = (locationName: string) => ({
@@ -132,7 +137,7 @@ export function withInlineKeyboard(res: TelegramResponseBody, keyboard: InlineKe
 
 type TelegramWeatherRequestCommand = "now" | "tomorrow";
 
-type TelegramCommand = {
+export type TelegramCommand = {
   command: TelegramWeatherRequestCommand | "help" | "settings";
   city?: string;
   country?: string;

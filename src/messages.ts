@@ -1,4 +1,13 @@
 import { Forecast } from "./forecast.ts";
+import { findLocationByNameAndUser, UserLocation } from "./repository/locations.ts";
+import { User } from "./repository/users.ts";
+import { InlineKeyBoard } from "./telegram/types.ts";
+import {
+  bookmarkLocationInlineButton,
+  disableNotificationsInlineButton,
+  enableNotificationsInlineButton,
+  TelegramCommand,
+} from "./telegram/utils.ts";
 
 export const retrospectiveMessage = (yday: Forecast, today: Forecast) => {
   const UNIX_DT_TRANSFORM_RATIO = 1000;
@@ -81,4 +90,22 @@ export const simpleMessage = (forecast: Forecast) => {
     💨 ${forecast.windSpeed} m/s
     - - - - - - - - - - - - - - - - - - - - - -
     `;
+};
+
+export const buildForecastKeyboard = async (user: User, c: TelegramCommand): Promise<InlineKeyBoard> => {
+  const location = await findLocationByNameAndUser(c.city!, user.id);
+  if (!location) {
+    const locationName = `${c.city},${c.country}`;
+    return [[bookmarkLocationInlineButton(locationName)], [enableNotificationsInlineButton(locationName)]];
+  }
+
+  return buildForecastKeyboardForLocation(location);
+};
+
+export const buildForecastKeyboardForLocation = (location: UserLocation): InlineKeyBoard => {
+  if (location && location.notificationsEnabled === false) {
+    return [[enableNotificationsInlineButton(location.id)]];
+  }
+
+  return [[disableNotificationsInlineButton(location.id)]];
 };

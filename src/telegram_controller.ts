@@ -5,20 +5,18 @@ import enableNotificationsUsecase from "./callbacks/enableNotifications.ts";
 
 import { newForecastClient } from "./forecast.ts";
 import { AuthenticatedContext } from "./middleware.ts";
-import { findLocationByNameAndUser, listLocations } from "./repository/locations.ts";
+import { listLocations } from "./repository/locations.ts";
 import { findValid } from "./callbacks/callbackUsecase.ts";
 import { newRetrospectiveForecastMessage } from "./retrospective.ts";
-import { InlineKeyBoard, TelegramCallbackQuery, TelegramLocation, TelegramMessage } from "./telegram/types.ts";
+import { TelegramCallbackQuery, TelegramLocation, TelegramMessage } from "./telegram/types.ts";
 import {
-  bookmarkLocationInlineButton,
-  enableNotificationsInlineButton,
   parseCommand,
   response,
   withForecastRequestInlineMenu,
   withInlineKeyboard,
   withSettingsInlineMenu,
 } from "./telegram/utils.ts";
-import { simpleMessage } from "./messages.ts";
+import { buildForecastKeyboard, simpleMessage } from "./messages.ts";
 
 export async function handleCallback(ctx: AuthenticatedContext, callback: TelegramCallbackQuery) {
   if (!callback.data) {
@@ -110,21 +108,7 @@ Tambien puedes probar a enviarme una localización.
       name: geolocation.name,
     });
 
-    let keyboard: InlineKeyBoard;
-    const location = await findLocationByNameAndUser(c.city!, ctx.user.id);
-
-    if (location && location.notificationsEnabled === false) {
-      // If it's a bookmarked location with disabled notifications, allow the user to enable them
-      keyboard = [[enableNotificationsInlineButton(location.id)]];
-    } else if (!location) {
-      // If it's not bookmarked, allow to either bookmark or enable (which also bookmarks).
-      const locationName = `${c.city},${c.country}`;
-      keyboard = [[bookmarkLocationInlineButton(locationName)], [enableNotificationsInlineButton(locationName)]];
-    } else {
-      // If it's bookmarked and notifications are enabled, no keyboard is sent.
-      keyboard = [];
-    }
-
+    const keyboard = await buildForecastKeyboard(ctx.user, c);
     return withInlineKeyboard(response(chatId, message), keyboard);
   } else {
     return response(

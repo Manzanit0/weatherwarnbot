@@ -1,8 +1,9 @@
+import { buildForecastKeyboardForLocation } from "../messages.ts";
 import { AuthenticatedContext } from "../middleware.ts";
 import { findLocationById } from "../repository/locations.ts";
 import { newRetrospectiveForecastMessage } from "../retrospective.ts";
 import { TelegramCallbackQuery } from "../telegram/types.ts";
-import { response } from "../telegram/utils.ts";
+import { response, withInlineKeyboard } from "../telegram/utils.ts";
 
 const callbackDataKey = "forecast:";
 
@@ -30,13 +31,16 @@ async function handleForecastCallback(ctx: AuthenticatedContext, callback: Teleg
     throw new Error("received forecast:now callback for a location that doesn't exist");
   }
 
-  const message = await newRetrospectiveForecastMessage(ctx.weatherClient, when, {
+  const text = await newRetrospectiveForecastMessage(ctx.weatherClient, when, {
     coordinates: location.coordinates,
     name: location.name,
   });
 
   await ctx.telegramClient.answerCallbackQuery(callback, `Fetching weather for ${location.name}`);
-  ctx.telegramClient.updateMessage(callback.message.message_id, response(ctx.user.telegramId, message));
+
+  const keyboard = buildForecastKeyboardForLocation(location);
+  const message = withInlineKeyboard(response(ctx.user.telegramId, text), keyboard);
+  ctx.telegramClient.updateMessage(callback.message.message_id, message);
 }
 
 export default {
