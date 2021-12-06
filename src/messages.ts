@@ -39,21 +39,7 @@ export const retrospectiveMessage = (yday: Forecast, today: Forecast) => {
     temperatureTLDR = "Hoy más o menos puedes esperar las mismas temperaturas que ayer.";
   }
 
-  // TODO: synthesise this into a func: https://en.wikipedia.org/wiki/Beaufort_scale
-  let windTLDR: string;
-  if (today.windSpeed <= 0.5) {
-    windTLDR = "Ni gota de aire, chacho!";
-  } else if (today.windSpeed <= 5.5) {
-    windTLDR = "Parece que va a haber una brisilla muy ligera, pero vamos, bien.";
-  } else if (today.windSpeed <= 10.7) {
-    windTLDR = "Va a hacer vientecillo... Si tienes cometa, sácala.";
-  } else if (today.windSpeed <= 13.8) {
-    windTLDR = "No va a hacer día de paseo, el viento va a ser molesto.";
-  } else if (today.windSpeed <= 17.1) {
-    windTLDR = "Va a hacer tanto viento que está en el límite de mejor quedarse en casa.";
-  } else {
-    windTLDR = "Quédate en casa, va a haber DEMASIADO viento, puede que se caigan arboles.";
-  }
+  const beaufortTLDR = beaufortDescription(today.windSpeed);
 
   return `🚩 ${today.location}
 - - - - - - - - - - - - - - - - - - - - - -
@@ -68,7 +54,7 @@ Temperaturas:
 🔥 ${today.maxTemperature}ºC → ${today.maxTemperature}ºC
 
 Viento:
-📄 ${windTLDR}
+📄 ${beaufortTLDR}
 💨 ${yday.windSpeed} m/s → ${today.windSpeed} m/s
 
 Humedad:
@@ -130,3 +116,34 @@ que usar el sufijo con mi nombre: /help@weatherwarnbot.
 
 Tambien puedes probar a enviarme una localización.
         `;
+
+// Synthesises the Beaufort scale.
+// @see https://en.wikipedia.org/wiki/Beaufort_scale
+const beaufortDescription = (windSpeed: number) => {
+  let windTLDR: string;
+  if (windSpeed <= 0.5) {
+    windTLDR = "Ni gota de aire, chacho!";
+  } else if (windSpeed <= 3.3) {
+    windTLDR = "Brisa leve - A lo sumo se oirá el crujir de las hojas.";
+  } else if (windSpeed <= 5.5) {
+    windTLDR = "Brisa leve - Las ramillas más pequeñas de los arboles se moveran, pero poco más.";
+  } else if (windSpeed <= 7.9) {
+    windTLDR = "Brisa moderada - Es posible que el polvo del suelo se levante.";
+  } else if (windSpeed <= 10.7) {
+    windTLDR = "Brisa moderada - Los arboles más pequeños se van a mover";
+  } else if (windSpeed <= 13.8) {
+    windTLDR = "Brisa fuerte - Suficiente como para que sea incomodo usar paraguas.";
+  } else if (windSpeed <= 17.1) {
+    windTLDR = "Viento fuerte - Va a ser incomodo pasear.";
+  } else if (windSpeed <= 20.7) {
+    windTLDR =
+      "Viento muy fuerte - No se puede caminar con este viento; las ramas más pequeñas de los árboles se romperan.";
+  } else if (windSpeed <= 24.5) {
+    windTLDR = "Viento muy fuerte - Es peligroso salir, hará suficiente viento para arrancar tejas de las casas";
+  } else {
+    windTLDR =
+      "Borrasca - Quédate en casa y consulta las noticias: suficiente para arrancar árboles del suelo o dañar estructuras.";
+  }
+
+  return windTLDR;
+};
