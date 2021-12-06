@@ -16,7 +16,7 @@ import {
   withInlineKeyboard,
   withSettingsInlineMenu,
 } from "./telegram/utils.ts";
-import { buildForecastKeyboard, simpleMessage } from "./messages.ts";
+import { buildForecastKeyboard, helpText, simpleMessage } from "./messages.ts";
 
 export async function handleCallback(ctx: AuthenticatedContext, callback: TelegramCallbackQuery) {
   if (!callback.data) {
@@ -74,29 +74,7 @@ export async function handleCommand(ctx: AuthenticatedContext, message: Telegram
   if (c.command === "settings") {
     return withSettingsInlineMenu(response(chatId, "What do you want to check?"));
   } else if (c.command == "help") {
-    return response(
-      chatId,
-      `
-Los siguientes comandos están disponibles para su uso:
-
-✔️ /now London, GB
-Devuelve el tiempo para la ciudad en estos momentos.
-
-✔️ /tomorrow Madrid, ES
-Devuelve el tiempo para la ciudad mañana.
-
-✔️ /settings
-Permite gestionar las localidades guardadas.
-
-✔️ /help
-imprime esta ayuda.
-
-Recuerda que si me estás llamando dentro de un group, seguramente tengas
-que usar el sufijo con mi nombre: /help@weatherwarnbot.
-
-Tambien puedes probar a enviarme una localización.
-        `,
-    );
+    return response(chatId, helpText);
   } else if (c.command == "now" || c.command === "tomorrow") {
     const geolocation = await ctx.geolocationClient.findLocation(c.city!);
     if (!geolocation) {

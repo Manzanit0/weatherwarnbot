@@ -109,3 +109,24 @@ export const buildForecastKeyboardForLocation = (location: UserLocation): Inline
 
   return [[disableNotificationsInlineButton(location.id)]];
 };
+
+export const helpText = `
+Los siguientes comandos están disponibles para su uso:
+
+✔️ /now London, GB
+Devuelve el tiempo para la ciudad en estos momentos.
+
+✔️ /tomorrow Madrid, ES
+Devuelve el tiempo para la ciudad mañana.
+
+✔️ /settings
+Permite gestionar las localidades guardadas.
+
+✔️ /help
+imprime esta ayuda.
+
+Recuerda que si me estás llamando dentro de un group, seguramente tengas
+que usar el sufijo con mi nombre: /help@weatherwarnbot.
+
+Tambien puedes probar a enviarme una localización.
+        `;
