@@ -11,7 +11,7 @@ export type MessagePayload = {
 };
 
 async function answerCallbackQuery(query: TelegramCallbackQuery, message: string) {
-  const req = await fetch(`${apiHost}/answerCallbackQuery`, {
+  const res = await fetch(`${apiHost}/answerCallbackQuery`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -22,13 +22,13 @@ async function answerCallbackQuery(query: TelegramCallbackQuery, message: string
     }),
   });
 
-  if (!req.ok) {
-    throw new Error(`failed to answer callback_query: status=${req.status}`);
+  if (!res.ok) {
+    await throwUnexpectedResponse(res);
   }
 }
 
 async function sendComplexMessage(payload: MessagePayload) {
-  const req = await fetch(`${apiHost}/sendMessage`, {
+  const res = await fetch(`${apiHost}/sendMessage`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -36,8 +36,8 @@ async function sendComplexMessage(payload: MessagePayload) {
     body: JSON.stringify(payload),
   });
 
-  if (!req.ok) {
-    throw new Error(`failed to to sendMessage: status=${req.status}`);
+  if (!res.ok) {
+    await throwUnexpectedResponse(res);
   }
 }
 
@@ -46,7 +46,7 @@ function sendMessage(chatId: string, message: string) {
 }
 
 async function updateMessage(messageId: string, payload: MessagePayload) {
-  const req = await fetch(`${apiHost}/editMessageText`, {
+  const res = await fetch(`${apiHost}/editMessageText`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -54,10 +54,16 @@ async function updateMessage(messageId: string, payload: MessagePayload) {
     body: JSON.stringify({ ...payload, message_id: messageId }),
   });
 
-  if (!req.ok) {
-    throw new Error(`failed to to sendMessage: status=${req.status}`);
+  if (!res.ok) {
+    await throwUnexpectedResponse(res);
   }
 }
+
+const throwUnexpectedResponse = async (res: Response) => {
+  throw new Error(
+    `failed to to sendMessage: status=${res.status} ${res.statusText}, body=${JSON.stringify(await res.json())}`,
+  );
+};
 
 export interface TelegramClient {
   sendMessage(chatId: string, message: string): Promise<void>;
