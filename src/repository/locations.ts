@@ -65,6 +65,10 @@ export const enableNotifications = (id: string) =>
   runQuery<DbUserLocation>(`UPDATE user_locations set notifications_enabled=true WHERE id = '${id}'`)
     .then(unwrapAffectedRecordCount);
 
+export const disableNotifications = (id: string) =>
+  runQuery<DbUserLocation>(`UPDATE user_locations set notifications_enabled=false WHERE id = '${id}'`)
+    .then(unwrapAffectedRecordCount);
+
 const toUserLocation = (x: DbUserLocation) => ({
   id: x.id,
   userId: x.user_id,

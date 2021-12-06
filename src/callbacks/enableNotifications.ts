@@ -4,6 +4,7 @@ import { createUserLocation, enableNotifications, findLocationById, UserLocation
 import { TelegramCallbackQuery } from "../telegram/types.ts";
 import { response, withInlineKeyboard } from "../telegram/utils.ts";
 import { v4 } from "https://deno.land/std@0.116.0/uuid/mod.ts";
+import { buildForecastKeyboardForLocation } from "../messages.ts";
 
 const callbackDataKey = "location:notification_on";
 
@@ -52,9 +53,14 @@ async function handleEnableNotificationsCallback(ctx: AuthenticatedContext, call
 
   const originalMessageId = callback.message.message_id;
   const originalMessageText = callback.message.text;
-  const payload = withInlineKeyboard(response(ctx.user.telegramId, originalMessageText), []);
 
-  await ctx.telegramClient.updateMessage(originalMessageId, payload);
+  const keyboard = buildForecastKeyboardForLocation({
+    ...location,
+    notificationsEnabled: !location.notificationsEnabled,
+  });
+  const message = withInlineKeyboard(response(ctx.user.telegramId, originalMessageText), keyboard);
+
+  await ctx.telegramClient.updateMessage(originalMessageId, message);
   await ctx.telegramClient.answerCallbackQuery(callback, "Notifications enabled!");
 }
 

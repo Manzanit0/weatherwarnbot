@@ -2,6 +2,7 @@ import bookmarkLocationUsecase from "./callbacks/bookmarkLocation.ts";
 import settingsUsecase from "./callbacks/settings.ts";
 import forecastUsecase from "./callbacks/forecast.ts";
 import enableNotificationsUsecase from "./callbacks/enableNotifications.ts";
+import disableNotificationsUsecase from "./callbacks/disableNotifications.ts";
 
 import { newForecastClient } from "./forecast.ts";
 import { AuthenticatedContext } from "./middleware.ts";
@@ -28,6 +29,7 @@ export async function handleCallback(ctx: AuthenticatedContext, callback: Telegr
     settingsUsecase,
     forecastUsecase,
     enableNotificationsUsecase,
+    disableNotificationsUsecase,
   ];
 
   const usecase = findValid(usecases, callback);
