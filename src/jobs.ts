@@ -13,4 +13,4 @@ cron.add("00 08 * * *", async () => {
   await notifyWeatherChanges(telegramClient, fc);
 });
 
-export const start = () => cron.start();
+export const startJobs = () => cron.start();

@@ -1,9 +1,9 @@
 import createApp from "./application.ts";
-import { start } from "./jobs.ts";
+import { startJobs } from "./jobs.ts";
 import { getLogger } from "./logger.ts";
 
 // Start weather reminding jobs
-start();
+startJobs();
 
 // Start bot
 const port = Number(Deno.env.get("PORT") ?? "8000");
