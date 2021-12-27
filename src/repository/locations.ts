@@ -1,12 +1,14 @@
 // deno-lint-ignore-file camelcase
 import * as R from "https://raw.githubusercontent.com/selfrefactor/rambda/master/dist/rambda.esm.js";
 import { assertOne, runQuery, unwrapAffectedRecordCount, unwrapMany, unwrapOne } from "./database.ts";
+import { User } from "./users.ts";
 
 export type Coordinates = { latitude: number; longitude: number };
 
 export type UserLocation = {
   id: string;
   userId: string;
+  user?: User;
   name: string;
   coordinates: Coordinates;
   notificationsEnabled: boolean;
@@ -57,6 +59,21 @@ export const listLocations = (userId: string) =>
   runQuery<DbUserLocation>(`SELECT ${locationFields} FROM user_locations WHERE user_id = '${userId}'`)
     .then(unwrapLocations);
 
+type DbUserUserLocation = {
+  telegram_chat_id: string;
+  name: string;
+  coordinates: string;
+};
+
+export const listLocationsToAlert = () =>
+  runQuery<DbUserUserLocation>(`SELECT
+      users.telegram_chat_id,
+      user_locations.name, user_locations.coordinates
+    FROM user_locations
+    INNER JOIN users ON users.id = user_locations.user_id
+    WHERE user_locations.notifications_enabled = TRUE`)
+    .then(unwrapLocationsWithUsers);
+
 export const deleteLocationById = (id: string) =>
   runQuery<DbUserLocation>(`DELETE FROM user_locations WHERE id = '${id}'`)
     .then(unwrapAffectedRecordCount);
@@ -74,6 +91,14 @@ const toUserLocation = (x: DbUserLocation) => ({
   userId: x.user_id,
   name: x.name,
   notificationsEnabled: x.notifications_enabled,
+  coordinates: decodeCoordinates(x.coordinates),
+} as UserLocation);
+
+const toUserLocationWithUser = (x: DbUserUserLocation) => ({
+  user: {
+    telegramId: x.telegram_chat_id,
+  },
+  name: x.name,
   coordinates: decodeCoordinates(x.coordinates),
 } as UserLocation);
 
@@ -98,6 +123,8 @@ const decodeCoordinates = (coordinates: string) => {
 const encodeCoordinates = (coordinates: Coordinates) => `(${coordinates.latitude}, ${coordinates.longitude})`;
 
 const unwrapLocations: () => UserLocation[] = R.curry(unwrapMany)(toUserLocation);
+
+const unwrapLocationsWithUsers: () => UserLocation[] = R.curry(unwrapMany)(toUserLocationWithUser);
 
 const unwrapMaybeOneLocation: () => UserLocation | null = R.curry(unwrapOne)(toUserLocation);
 

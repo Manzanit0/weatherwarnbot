@@ -3,16 +3,15 @@ import { spy } from "https://deno.land/x/mock@0.10.1/spy.ts";
 
 import createApp from "../src/application.ts";
 
+import { nukeDB, setup } from "./helpers.ts";
 import { GeolocationClientMock } from "./mocks/GeolocationClientMock.ts";
 import { WeatherClientMock } from "./mocks/WeatherClientMock.ts";
 import { TelegramClientMock } from "./mocks/TelegramClientMock.ts";
 
 // TODO: Ideally we don't want to have these dependencies in the tests.
-import { newClient } from "../src/repository/database.ts";
 import { createUserLocation } from "../src/repository/locations.ts";
 import { createUser } from "../src/repository/users.ts";
 import { assertEquals } from "https://deno.land/std@0.113.0/testing/asserts.ts";
-import { getLogger } from "../src/logger.ts";
 
 const defaultApp = await createApp({
   geolocation: new GeolocationClientMock(),
@@ -20,18 +19,9 @@ const defaultApp = await createApp({
   telegram: new TelegramClientMock(),
 });
 
-// Stop from printing logs in test runner by setting level to critical.
-getLogger().level = 50;
-
 const server = (app = defaultApp) => superdeno(app.handle.bind(app));
 
-// these values can be gathered in the docker-compose.yml
-// for the tests to pass, run `make bootstrap`.
-Deno.env.set("PGUSER", "root");
-Deno.env.set("PGPASSWORD", "password");
-Deno.env.set("PGDATABASE", "weatherbot_db");
-Deno.env.set("PGHOST", "localhost");
-Deno.env.set("PGPORT", "5431");
+await setup();
 
 Deno.test("serve Hello World", async () => {
   await server()
@@ -408,14 +398,4 @@ const chat = {
   "last_name": "Doe",
   "username": "jdoe",
   "type": "private",
-};
-
-// TODO: In order to avoid having to nuke the DB in each test, we need to push
-// the repository to the boundary to replace it with a in-memory one.
-const nukeDB = async () => {
-  const c = newClient();
-  await c.connect();
-  await c.queryObject("DELETE FROM user_locations;");
-  await c.queryObject("DELETE FROM users;");
-  await c.end();
 };

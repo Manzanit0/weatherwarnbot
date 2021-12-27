@@ -32,7 +32,12 @@ const fetchYesterdayWeatherByCoordinatesWithClient = (c: WeatherClient) =>
     c.requestHistoricForecast({ latitude: lat, longitude: lon })
       .then(mapHistoricForecastData);
 
-export const newForecastClient = (c: WeatherClient) => ({
+export type ForecastClient = {
+  fetchWeatherByCoordinates: (lat: number, lon: number, when?: Day) => Promise<Forecast>;
+  fetchYesterdayWeatherByCoordinates: (lat: number, lon: number) => Promise<Forecast>;
+};
+
+export const newForecastClient = (c: WeatherClient): ForecastClient => ({
   fetchWeatherByCoordinates: fetchWeatherByCoordinatesWithClient(c),
   fetchYesterdayWeatherByCoordinates: fetchYesterdayWeatherByCoordinatesWithClient(c),
 });
