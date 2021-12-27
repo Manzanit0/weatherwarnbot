@@ -65,6 +65,13 @@ export async function handleCommand(ctx: AuthenticatedContext, message: Telegram
     const locationTuples = (await listLocations(ctx.user.id))
       .map((x) => [x.id, x.name!] as [string, string]);
 
+    if (locationTuples.length === 0) {
+      return response(
+        chatId,
+        `You need to tell me which city to check the weather for, give me the city followed by a comma and the country code; try with \`/${c.command} London,GB\``,
+      );
+    }
+
     // TODO: if list is empty, allow user to provide city/code?
     return withForecastRequestInlineMenu(
       response(chatId, "Which location do you want to check the weather for?"),

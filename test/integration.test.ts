@@ -73,9 +73,9 @@ Deno.test("tomorrow command without params and no saved locations", async () => 
   const responseBody = JSON.stringify({
     "method": "sendMessage",
     "chat_id": "123456",
-    "text": "Which location do you want to check the weather for?",
+    "text":
+      "You need to tell me which city to check the weather for, give me the city followed by a comma and the country code; try with `/tomorrow London,GB`",
     "parse_mode": "markdown",
-    "reply_markup": { "inline_keyboard": [] },
   });
 
   await server()
