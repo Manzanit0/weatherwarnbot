@@ -220,7 +220,7 @@ Temperaturas:
 🔥 16.14ºC → 16.14ºC
 
 Viento:
-📄 Parece que va a haber una brisilla muy ligera, pero vamos, bien.
+📄 Brisa leve - A lo sumo se oirá el crujir de las hojas.
 💨 2.28 m/s → 2.38 m/s
 
 Humedad:
@@ -241,7 +241,7 @@ Humedad:
       parse_mode: "markdown",
       reply_markup: {
         inline_keyboard: [
-          [{ "text": "📬 Enable notifications", "callback_data": `location:notification_on:${location.id}` }],
+          [{ "text": "🔔 Enable notifications", "callback_data": `location:notification_on:${location.id}` }],
         ],
       },
     });
@@ -359,7 +359,7 @@ Temperaturas:
 🔥 16.14ºC → 16.14ºC
 
 Viento:
-📄 Parece que va a haber una brisilla muy ligera, pero vamos, bien.
+📄 Brisa leve - A lo sumo se oirá el crujir de las hojas.
 💨 2.28 m/s → 2.38 m/s
 
 Humedad:
@@ -367,10 +367,22 @@ Humedad:
 - - - - - - - - - - - - - - - - - - - - - -
 `;
 
+  const expectedKeyboard = {
+    // deno-lint-ignore camelcase
+    inline_keyboard: [
+      [
+        {
+          callback_data: `location:notification_on:${location.id}`,
+          text: "🔔 Enable notifications",
+        },
+      ],
+    ],
+  };
+
   assertEquals(updateMessageMock.calls.length, 1);
   assertEquals(updateMessageMock.calls[0].args[0], messageId);
   assertEquals(updateMessageMock.calls[0].args[1].text, expectedText);
-  assertEquals(updateMessageMock.calls[0].args[1].reply_markup, undefined);
+  assertEquals(updateMessageMock.calls[0].args[1].reply_markup, expectedKeyboard);
 });
 
 // Canned data.
