@@ -22,6 +22,7 @@ type Params = {
 export default (params: Params = {}) => {
   const generalRouter = new Router<RouteParams, ContextState>();
   generalRouter.get("/", (ctx) => {
+    ctx.response.status = 200;
     ctx.response.body = "Hello world!";
   });
 
