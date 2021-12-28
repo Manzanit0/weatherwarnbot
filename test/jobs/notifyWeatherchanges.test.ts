@@ -61,7 +61,7 @@ Deno.test("a message is sent if max temperature is more than 5ºC", async () => 
 
   assertEquals(sendMessageSpy.calls.length, 1);
   assertEquals(sendMessageSpy.calls[0].args[0], user.telegramId);
-  assertStringIncludes(sendMessageSpy.calls[0].args[1], "Hey! Apparently the weather is changing...");
+  assertStringIncludes(sendMessageSpy.calls[0].args[1], "Hey! the temperature is increasing today 🔥...");
 });
 
 Deno.test("a message is sent if description changes", async () => {
@@ -115,7 +115,7 @@ Deno.test("a message is sent if description changes", async () => {
 
   assertEquals(sendMessageSpy.calls.length, 1);
   assertEquals(sendMessageSpy.calls[0].args[0], user.telegramId);
-  assertStringIncludes(sendMessageSpy.calls[0].args[1], "Hey! Apparently the weather is changing...");
+  assertStringIncludes(sendMessageSpy.calls[0].args[1], "Hey! apparently the weather is changing today ⛅️...");
 });
 
 Deno.test("no message is sent if weather is mildly the same", async () => {
@@ -252,11 +252,11 @@ Deno.test("a message is sent per location", async () => {
   assertEquals(sendMessageSpy.calls[1].args[0], user.telegramId);
 
   // The first message is regarding the first location
-  assertStringIncludes(sendMessageSpy.calls[0].args[1], "Hey! Apparently the weather is changing...");
+  assertStringIncludes(sendMessageSpy.calls[0].args[1], "Hey! the temperature is increasing today 🔥...");
   assertStringIncludes(sendMessageSpy.calls[0].args[1], "Foo-Land-1");
 
   // The second message is regarding the second location
-  assertStringIncludes(sendMessageSpy.calls[1].args[1], "Hey! Apparently the weather is changing...");
+  assertStringIncludes(sendMessageSpy.calls[1].args[1], "Hey! the temperature is increasing today 🔥...");
   assertStringIncludes(sendMessageSpy.calls[1].args[1], "Foo-Land-2");
 });
 

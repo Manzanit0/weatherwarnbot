@@ -1,4 +1,4 @@
-import { ForecastClient } from "../forecast.ts";
+import { Forecast, ForecastClient } from "../forecast.ts";
 import { getLogger } from "../logger.ts";
 import { retrospectiveMessage } from "../messages.ts";
 import { listLocationsToAlert, UserLocation } from "../repository/locations.ts";
@@ -24,13 +24,27 @@ const apply = async (t: TelegramClient, f: ForecastClient, x: UserLocation) => {
   const historic = f.fetchYesterdayWeatherByCoordinates(x.coordinates.latitude, x.coordinates.longitude);
   const [dailyResolved, historicResolved] = await Promise.all([daily, historic]);
 
-  if (
-    (Math.abs(dailyResolved.minimumTemperature - historicResolved.minimumTemperature) > 5) || // 5º diff
-    (Math.abs(dailyResolved.maxTemperature - historicResolved.maxTemperature) > 5) || // 5º diff
-    (dailyResolved.description !== historicResolved.description) // Something changes. Maybe clouds, maybe something else.
-  ) {
+  if (isTemperatureDecreasing(dailyResolved, historicResolved)) {
     let message = retrospectiveMessage(historicResolved, dailyResolved);
-    message = `Hey! Apparently the weather is changing...
+    message = `Hey! the temperature is dropping today ❄️...
+
+    ${message}`;
+
+    return t.sendMessage(x.user!.telegramId, message);
+  }
+
+  if (isTemperatureIncreasing(dailyResolved, historicResolved)) {
+    let message = retrospectiveMessage(historicResolved, dailyResolved);
+    message = `Hey! the temperature is increasing today 🔥...
+
+    ${message}`;
+
+    return t.sendMessage(x.user!.telegramId, message);
+  }
+
+  if (isConditionChanging(dailyResolved, historicResolved)) {
+    let message = retrospectiveMessage(historicResolved, dailyResolved);
+    message = `Hey! apparently the weather is changing today ⛅️...
 
     ${message}`;
 
@@ -39,3 +53,11 @@ const apply = async (t: TelegramClient, f: ForecastClient, x: UserLocation) => {
 
   return Promise.resolve();
 };
+
+const isTemperatureDecreasing = (today: Forecast, yesterday: Forecast) =>
+  (today.maxTemperature - yesterday.maxTemperature) < -5;
+
+const isTemperatureIncreasing = (today: Forecast, yesterday: Forecast) =>
+  (today.maxTemperature - yesterday.maxTemperature) > 5;
+
+const isConditionChanging = (today: Forecast, yesterday: Forecast) => today.description !== yesterday.description;

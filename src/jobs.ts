@@ -1,16 +1,14 @@
-import { Cron } from "https://deno.land/x/crontab@0.1.1-1/cron.ts";
+import { cron, start } from "https://deno.land/x/deno_cron@v1.0.0/cron.ts";
 
 import notifyWeatherChanges from "./jobs/notifyWeatherChanges.ts";
 import { openWeatherMapClient } from "./openweathermap.ts";
 import { telegramClient } from "./telegram/client.ts";
 import { newForecastClient } from "./forecast.ts";
 
-const cron = new Cron();
-
-// Every day at 08.00 UTC.
-cron.add("00 08 * * *", async () => {
+// Every day at 07.00 UTC.
+cron("00 07 * * *", async () => {
   const fc = newForecastClient(openWeatherMapClient);
   await notifyWeatherChanges(telegramClient, fc);
 });
 
-export const startJobs = () => cron.start();
+export const startJobs = () => start();
