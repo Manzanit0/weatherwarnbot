@@ -5,14 +5,17 @@ import { listLocationsToAlert, UserLocation } from "../repository/locations.ts";
 import { TelegramClient } from "../telegram/client.ts";
 
 export default async (t: TelegramClient, w: ForecastClient) => {
+  const results: Promise<void>[] = [];
+
   // FIXME: based on the query, there's a chance we'll be messaging the same
   // user multiple times. We might want to group all the locations by user?
   for (const location of await listLocationsToAlert()) {
-    // Isolate the attempt for each location.
+    results.push(apply(t, w, location));
+  }
+
+  for (const result of results) {
     try {
-      // TODO: this will be a bottleneck. Would be nice to not block per
-      // message. Look into how to solve this with Deno.
-      await apply(t, w, location);
+      await result;
     } catch (error) {
       getLogger().error(JSON.stringify(error));
     }
