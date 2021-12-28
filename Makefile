@@ -1,4 +1,12 @@
 run: bootstrap
+	PGUSER=root \
+	PGPASSWORD=password \
+	PGHOST=localhost \
+	PGDATABASE=weatherbot_db \
+	PGPORT=5431 \
+	TELEGRAM_BOT_TOKEN=`railway vars get TELEGRAM_BOT_TOKEN` \
+	OPENWEATHERMAP_API_KEY=`railway vars get OPENWEATHERMAP_API_KEY` \
+	POSITIONSTACK_API_KEY=`railway vars get POSITIONSTACK_API_KEY` \
 	deno run --allow-net --allow-env src/index.ts
 
 test: bootstrap
