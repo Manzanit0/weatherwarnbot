@@ -1,4 +1,5 @@
 // deno-lint-ignore-file camelcase
+import { request } from "../http.ts";
 import { ReplyMarkup, TelegramCallbackQuery } from "./types.ts";
 
 const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
@@ -11,7 +12,7 @@ export type MessagePayload = {
 };
 
 async function answerCallbackQuery(query: TelegramCallbackQuery, message: string) {
-  const res = await fetch(`${apiHost}/answerCallbackQuery`, {
+  const res = await request(`${apiHost}/answerCallbackQuery`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -28,7 +29,7 @@ async function answerCallbackQuery(query: TelegramCallbackQuery, message: string
 }
 
 async function sendComplexMessage(payload: MessagePayload) {
-  const res = await fetch(`${apiHost}/sendMessage`, {
+  const res = await request(`${apiHost}/sendMessage`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -46,7 +47,7 @@ function sendMessage(chatId: string, message: string) {
 }
 
 async function updateMessage(messageId: string, payload: MessagePayload) {
-  const res = await fetch(`${apiHost}/editMessageText`, {
+  const res = await request(`${apiHost}/editMessageText`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

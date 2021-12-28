@@ -1,3 +1,4 @@
+import { request } from "./http.ts";
 import { getLogger } from "./logger.ts";
 
 export interface GeolocationClient {
@@ -45,8 +46,7 @@ const findLocation = async (query: string) => {
     `http://api.positionstack.com/v1/forward?access_key=${apiKey}&query=${query}`,
   );
 
-  logger.info(`Sending request to ${url}`);
-  const res = await fetch(url);
+  const res = await request(url);
   if (!res.ok) {
     logger.warning(`http status ${res.status}`);
     throw new Error("failed to make request to positionstack API");

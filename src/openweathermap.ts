@@ -1,3 +1,4 @@
+import { request } from "./http.ts";
 import { getLogger } from "./logger.ts";
 
 type WeatherDescription = {
@@ -116,8 +117,7 @@ const fetchOpenWeatherMap = async <T>(endpoint: string) => {
   const key = Deno.env.get("OPENWEATHERMAP_API_KEY");
   const url = `http://api.openweathermap.org${endpoint}&appid=${key}`;
 
-  logger.info(`Sending request to ${url}`);
-  const res = await fetch(url);
+  const res = await request(url);
   if (!res.ok) {
     logger.warning(`http status ${res.status}`);
     throw new Error("failed to make request to openweathermap API");

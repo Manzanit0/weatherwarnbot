@@ -10,7 +10,6 @@ export default async (t: TelegramClient, w: ForecastClient) => {
   for (const location of await listLocationsToAlert()) {
     // Isolate the attempt for each location.
     try {
-      getLogger().info("processing " + location.name);
       // TODO: this will be a bottleneck. Would be nice to not block per
       // message. Look into how to solve this with Deno.
       await apply(t, w, location);
