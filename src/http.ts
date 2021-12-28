@@ -6,7 +6,7 @@ export const request = async (input: Request | URL | string, init?: RequestInit)
 
   const ms = Date.now() - start;
   const path = cleanURL(input);
-  getLogger().info(`HTTP ${init?.method ?? "GET"} ${path} ${res.status} - ${ms}ms`);
+  getLogger().info(`${init?.method ?? "GET"} ${path} -> ${res.status} (${ms} ms)`);
 
   return res;
 };
