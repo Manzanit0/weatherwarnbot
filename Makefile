@@ -13,7 +13,7 @@ test: bootstrap
 	deno test -A --fail-fast
 
 bootstrap:
-	docker compose up --build -d
+	docker-compose up --build -d
 
 bootstrap-down:
 	docker-compose -f docker-compose.yml down --volumes
