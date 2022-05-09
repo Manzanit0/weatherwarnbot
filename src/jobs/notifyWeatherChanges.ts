@@ -58,9 +58,19 @@ const apply = async (t: TelegramClient, f: ForecastClient, x: UserLocation) => {
 };
 
 const isTemperatureDecreasing = (today: Forecast, yesterday: Forecast) =>
-  (today.maxTemperature - yesterday.maxTemperature) < -5;
+  (today.maxTemperature - yesterday.maxTemperature) < -4;
 
 const isTemperatureIncreasing = (today: Forecast, yesterday: Forecast) =>
-  (today.maxTemperature - yesterday.maxTemperature) > 5;
+  (today.maxTemperature - yesterday.maxTemperature) > 4;
 
-const isConditionChanging = (today: Forecast, yesterday: Forecast) => today.description !== yesterday.description;
+const isConditionChanging = (today: Forecast, yesterday: Forecast) => {
+  const eitherItStartsToRainOrStops =
+    (today.description.toLowerCase().includes("lluvia") && !yesterday.description.toLowerCase().includes("lluvia")) ||
+    (today.description.toLowerCase().includes("rain") && !yesterday.description.toLowerCase().includes("rain"));
+
+  const eitherTheresAStormOrItStops = (today.description.toLowerCase().includes("tormenta") &&
+    !yesterday.description.toLowerCase().includes("tormenta")) ||
+    (today.description.toLowerCase().includes("storm") && !yesterday.description.toLowerCase().includes("storm"));
+
+  return eitherItStartsToRainOrStops || eitherTheresAStormOrItStops;
+};
